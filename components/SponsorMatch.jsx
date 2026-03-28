@@ -712,6 +712,41 @@ export default function SponsorMatch() {
         window.history.replaceState({}, '', url.toString());
       }
     }
+
+    // Pending Invite annehmen (eingeloggter User kam via Invite-Link)
+    if (typeof window !== 'undefined') {
+      const pendingToken = sessionStorage.getItem('pendingInvite');
+      if (pendingToken) {
+        sessionStorage.removeItem('pendingInvite');
+        try {
+          const res = await fetch('/api/team/invite/accept', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: pendingToken }),
+          });
+          const data = await res.json();
+          if (res.ok && data.ok) {
+            notify('Einladung angenommen — willkommen im Team!');
+            // Rolle + Team neu laden
+            try {
+              const profile = await getUserProfile(uid);
+              setUser(prev => prev ? { ...prev, role: profile.role, organization_id: profile.organization_id } : prev);
+            } catch { /* already handled above */ }
+            loadTeam();
+          } else if (data.error) {
+            notify('Einladung fehlgeschlagen: ' + data.error);
+          }
+        } catch {
+          notify('Einladung konnte nicht verarbeitet werden');
+        }
+        // invite-Parameter aus URL entfernen
+        const url = new URL(window.location.href);
+        if (url.searchParams.has('invite')) {
+          url.searchParams.delete('invite');
+          window.history.replaceState({}, '', url.toString());
+        }
+      }
+    }
   }, [loadBranding, loadTier]);
 
   // ── Supabase Auth State Management ────────────────────────────

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 const loadingStyle = {
   minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
@@ -9,6 +9,7 @@ const loadingStyle = {
 
 function InviteContent() {
   const params = useSearchParams();
+  const router = useRouter();
   const token = params.get("token");
   const [invite, setInvite] = useState<any>(null);
   const [error, setError] = useState("");
@@ -58,7 +59,18 @@ function InviteContent() {
           Jetzt registrieren &amp; beitreten
         </a>
         <div style={{marginTop:"1rem",fontSize:"0.8rem",color:"#9b9690"}}>
-          Bereits ein Konto? <a href={`/?invite=${token}`} style={{color:"#e8500a",fontWeight:600}}>Einloggen</a>
+          Bereits ein Konto?{" "}
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              if (token) sessionStorage.setItem("pendingInvite", token);
+              router.push(`/?invite=${token}`);
+            }}
+            style={{color:"#e8500a",fontWeight:600}}
+          >
+            Einloggen
+          </a>
         </div>
       </div>
     </div>
