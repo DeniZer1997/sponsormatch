@@ -19,6 +19,7 @@ BEGIN
   SELECT * INTO invite
   FROM public.team_invites
   WHERE email = lower(new.email) AND accepted = false
+  ORDER BY created_at DESC
   LIMIT 1;
 
   IF invite.id IS NOT NULL THEN

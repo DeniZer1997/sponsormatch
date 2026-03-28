@@ -35,7 +35,6 @@ export async function GET(req: NextRequest) {
     orgName: org?.name ?? "Unbekannte Organisation",
     invitedByName: inviter?.display_name || inviter?.name || "Jemand",
     role: invite.role,
-    email: invite.email,
   });
 }
 
@@ -63,15 +62,6 @@ export async function POST(req: NextRequest) {
     .select("name")
     .eq("id", profile.organization_id)
     .single();
-
-  // Prüfen ob bereits Mitglied
-  const { data: existing } = await supabaseAdmin
-    .from("profiles")
-    .select("id")
-    .eq("organization_id", profile.organization_id)
-    .eq("id", (
-      await supabaseAdmin.auth.admin.listUsers()
-    ).data.users.find(u => u.email === email.trim())?.id ?? "none");
 
   // Invite erstellen (upsert — verhindert Duplikate)
   const { data: invite, error: insertErr } = await supabaseAdmin

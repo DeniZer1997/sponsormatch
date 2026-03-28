@@ -1231,18 +1231,22 @@ export default function SponsorMatch() {
 
   const removeTeamMember = async (memberId) => {
     try {
-      await fetch(`/api/team/members?id=${memberId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/team/members?id=${memberId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
       await loadTeam();
       notify("Mitglied entfernt");
-    } catch(e) { notify("Fehler beim Entfernen"); }
+    } catch(e) { notify("Fehler: " + e.message); }
   };
 
   const cancelInvite = async (inviteId) => {
     try {
-      await fetch(`/api/team/invites?id=${inviteId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/team/invites?id=${inviteId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
       await loadTeam();
       notify("Einladung zurückgezogen");
-    } catch(e) { notify("Fehler"); }
+    } catch(e) { notify("Fehler: " + e.message); }
   };
 
   return (

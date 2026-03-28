@@ -46,7 +46,7 @@ export async function DELETE(req: NextRequest) {
   // Mitglied aus Org entfernen (organization_id auf null setzen)
   await supabaseAdmin
     .from("profiles")
-    .update({ organization_id: null, role: "admin" })
+    .update({ organization_id: null })
     .eq("id", memberId)
     .eq("organization_id", adminProfile.organization_id);
 
