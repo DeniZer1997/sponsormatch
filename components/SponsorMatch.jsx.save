@@ -1,0 +1,404 @@
+const Sheet =
+"use client";
+import { useState } from "react";
+
+const ACCENT = "#e8500a";
+const C = {
+  bg: "#f8f7f4", surface: "#ffffff", border: "#e8e4dd",
+  text: "#1a1814", textMid: "#6b6560", textLight: "#a09b94",
+  accent: ACCENT, accentSoft: "#fdf1ec", accentBorder: "#f4c4ae",
+  green: "#16a34a", greenSoft: "#f0fdf4",
+  blue: "#2563eb", blueSoft: "#eff6ff",
+  amber: "#d97706", amberSoft: "#fffbeb",
+};
+
+const DEFAULT_PACKAGES = () => [
+  { id: "p1", name: "Platinum", price: 25000, color: ACCENT, slots: 1, taken: 0, benefits: ["Naming Right & Hauptbühne", "5 VIP Tickets + Lounge", "Logo auf allen Materialien", "30min Speaking Slot", "Branded Networking Area"] },
+  { id: "p2", name: "Gold", price: 12000, color: "#d97706", slots: 2, taken: 1, benefits: ["Co-Branding Hauptbühne", "3 Tickets", "Logo auf Website & App", "Social Media Erwähnung", "Standpräsenz 4m²"] },
+  { id: "p3", name: "Silver", price: 5000, color: "#64748b", slots: 4, taken: 2, benefits: ["Logo im Programm", "2 Tickets", "Erwähnung auf Bühne", "Website-Eintrag"] },
+];
+
+const DEFAULT_PIPELINE = () => [
+  { id: "s1", company: "TechVentures GmbH", contact: "Maria Huber", email: "m.huber@techventures.at", package: "Platinum", status: "negotiating", value: 25000, opened: "vor 2 Std", notes: "Sehr interessiert, will Vertrag bis Fr." },
+  { id: "s2", company: "Erste Bank AG", contact: "Thomas Berger", email: "t.berger@erstebank.at", package: "Gold", status: "sent", value: 12000, opened: "vor 1 Tag", notes: "Pitch gesendet, noch keine Antwort" },
+  { id: "s3", company: "A1 Telekom Austria", contact: "Sandra Koch", email: "s.koch@a1.at", package: "Gold", status: "confirmed", value: 12000, opened: "vor 3 Tagen", notes: "Vertrag unterschrieben" },
+  { id: "s4", company: "Raiffeisen Bank", contact: "Klaus Mayer", email: "k.mayer@rbint.com", package: "Silver", status: "draft", value: 5000, opened: "—", notes: "Paket noch nicht gesendet" },
+  { id: "s5", company: "ÖBB", contact: "Eva Steiner", email: "e.steiner@oebb.at", package: "Silver", status: "sent", value: 5000, opened: "vor 5 Std", notes: "Jetzt guter Zeitpunkt zum Anrufen!" },
+];
+
+const INITIAL_PROJECTS = [
+  { id: "proj1", name: "Summit Zukunft 2025", date: "15. Oktober 2025", location: "Marx Halle, Wien", audience: 400, reach: "12.000", description: "Österreichs führender Innovationsgipfel für Entscheider aus Tech, Finance und Corporate Austria.", packages: DEFAULT_PACKAGES(), pipeline: DEFAULT_PIPELINE() },
+  { id: "proj2", name: "Vienna Startup Fest", date: "3. März 2026", location: "WU Wien Campus", audience: 800, reach: "25.000", description: "Das größte Startup-Festival Österreichs.", packages: DEFAULT_PACKAGES(), pipeline: [] },
+];
+
+const STATUS_CONFIG = {
+  draft:       { label: "Entwurf",     color: C.textLight, bg: "#f1f0ee" },
+  sent:        { label: "Gesendet",    color: C.blue,      bg: C.blueSoft },
+  negotiating: { label: "Verhandlung", color: C.amber,     bg: C.amberSoft },
+  confirmed:   { label: "Bestätigt",   color: C.green,     bg: C.greenSoft },
+  rejected:    { label: "Abgelehnt",   color: "#dc2626",   bg: "#fef2f2" },
+};
+
+const Badge = ({ status }) => {
+  const s = STATUS_CONFIG[status] || STATUS_CONFIG.draft;
+  return <span style={{ fontSize:"0.65rem", fontWeight:700, padding:"0.2rem 0.55rem", borderRadius:99, background:s.bg, color:s.color, whiteSpace:"nowrap" }}>{s.label}</span>;
+};
+
+const mkInp = (extra={}) => ({ width:"100%", padding:"0.7rem 0.9rem", border:`1.5px solid ${C.border}`, borderRadius:10, background:C.bg, color:C.text, fontSize:"0.9rem", outline:"none", boxSizing:"border-box", fontFamily:"inherit", ...extra });
+
+export default function SponsorMatch() {
+  const [projects, setProjects] = useState(INITIAL_PROJECTS);
+  const [activeId, setActiveId] = useState("proj1");
+  const [page, setPage] = useState("dashboard");
+  const [notif, setNotif] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [showProjects, setShowProjects] = useState(false);
+  const [showNewProj, setShowNewProj] = useState(false);
+  const [editPkg, setEditPkg] = useState(null);
+  const [newSponsor, setNewSponsor] = useState({ company:"", contact:"", email:"", package:"Gold", notes:"" });
+  const [newProj, setNewProj] = useState({ name:"", date:"", location:"", audience:"", reach:"", description:"" });
+
+  const proj = projects.find(p => p.id === activeId);
+  const updProj = fn => setProjects(ps => ps.map(p => p.id === activeId ? fn(p) : p));
+  const confirmed = proj.pipeline.filter(s => s.status==="confirmed").reduce((a,s)=>a+s.value,0);
+  const pTotal = proj.pipeline.reduce((a,s)=>a+s.value,0);
+
+  const notify = msg => { setNotif(msg); setTimeout(()=>setNotif(null), 3000); };
+  const sendPitch = id => { updProj(p=>({...p, pipeline:p.pipeline.map(s=>s.id===id?{...s,status:"sent",opened:"gerade eben"}:s)})); notify("📨 Pitch gesendet!"); };
+  const updStatus = (id, status) => { updProj(p=>({...p, pipeline:p.pipeline.map(s=>s.id===id?{...s,status}:s)})); if(selected?.id===id) setSelected(s=>({...s,status})); notify(`Status → ${STATUS_CONFIG[status].label}`); };
+
+  const addSponsor = () => {
+    const pkg = proj.packages.find(p=>p.name===newSponsor.package);
+    updProj(p=>({...p, pipeline:[...p.pipeline, {...newSponsor, id:"s"+Date.now(), status:"draft", value:pkg?.price||5000, opened:"—"}]}));
+    setNewSponsor({company:"",contact:"",email:"",package:"Gold",notes:""}); setShowAdd(false); notify("✓ Sponsor hinzugefügt");
+  };
+
+  const createProj = () => {
+    const id = "proj"+Date.now();
+    setProjects(ps=>[...ps, {...newProj, id, audience:parseInt(newProj.audience)||0, packages:DEFAULT_PACKAGES(), pipeline:[]}]);
+    setActiveId(id); setNewProj({name:"",date:"",location:"",audience:"",reach:"",description:""});
+    setShowNewProj(false); setShowProjects(false); setPage("dashboard"); notify("✓ Event erstellt!");
+  };
+
+  const savePkg = () => { updProj(p=>({...p, packages:p.packages.map(pk=>pk.id===editPkg.id?editPkg:pk)})); setEditPkg(null); notify("✓ Paket gespeichert"); };
+
+  const TABS = [{id:"dashboard",icon:"⚡",label:"Übersicht"},{id:"pipeline",icon:"📊",label:"Pipeline"},{id:"packages",icon:"📦",label:"Pakete"},{id:"preview",icon:"👁",label:"Vorschau"}];
+
+  const Sheet = ({onClose, children}) => (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:200,display:"flex",flexDirection:"column",justifyContent:"flex-end"}} onClick={onClose}>
+      <div style={{background:C.surface,borderRadius:"20px 20px 0 0",padding:"1.5rem",maxHeight:"90vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+        <div style={{width:40,height:4,background:C.border,borderRadius:99,margin:"0 auto 1.25rem"}}/>
+        {children}
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{width:"100%",minHeight:"100vh",background:C.bg,fontFamily:"'Helvetica Neue',Helvetica,sans-serif",color:C.text,paddingBottom:80}}>
+      <style>{`* { box-sizing:border-box } button,input,select,textarea { font-family:inherit }`}</style>
+
+      {notif && <div style={{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",zIndex:999,background:C.text,color:"#fff",padding:"0.7rem 1.4rem",borderRadius:99,fontSize:"0.82rem",fontWeight:600,whiteSpace:"nowrap",boxShadow:"0 8px 32px rgba(0,0,0,0.18)"}}>{notif}</div>}
+
+      {showProjects && <Sheet onClose={()=>setShowProjects(false)}>
+        <div style={{fontSize:"1rem",fontWeight:800,marginBottom:"1.25rem"}}>Meine Events</div>
+        {projects.map(p=>(
+          <div key={p.id} onClick={()=>{setActiveId(p.id);setShowProjects(false);setPage("dashboard");}} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0.9rem 1rem",borderRadius:12,border:`2px solid ${p.id===activeId?C.accent:C.border}`,background:p.id===activeId?C.accentSoft:C.surface,marginBottom:"0.65rem",cursor:"pointer"}}>
+            <div><div style={{fontSize:"0.9rem",fontWeight:700}}>{p.name}</div><div style={{fontSize:"0.72rem",color:C.textMid}}>{p.date} · {p.location}</div></div>
+            <div style={{textAlign:"right"}}><div style={{fontSize:"0.75rem",fontWeight:700,color:C.green}}>€{p.pipeline.filter(s=>s.status==="confirmed").reduce((a,s)=>a+s.value,0).toLocaleString("de-DE")}</div><div style={{fontSize:"0.65rem",color:C.textLight}}>{p.pipeline.length} Kontakte</div></div>
+          </div>
+        ))}
+        <button onClick={()=>{setShowProjects(false);setShowNewProj(true);}} style={{width:"100%",marginTop:"0.5rem",background:C.accent,color:"#fff",border:"none",borderRadius:12,padding:"0.9rem",fontSize:"0.88rem",fontWeight:700,cursor:"pointer"}}>+ Neues Event anlegen</button>
+      </Sheet>}
+
+      {showNewProj && <Sheet onClose={()=>setShowNewProj(false)}>
+        <div style={{fontSize:"1rem",fontWeight:800,marginBottom:"1.25rem"}}>Neues Event anlegen</div>
+        <div style={{marginBottom:"0.9rem"}}>
+  <div style={{fontSize:"0.65rem",fontWeight:600,color:C.textMid,marginBottom:"0.3rem",letterSpacing:"0.06em"}}>EVENTNAME *</div>
+  <input type="text" placeholder="z.B. Vienna Tech Summit" value={newProj.name} onChange={e=>setNewProj(p=>({...p,name:e.target.value}))} style={mkInp()}/>
+</div>
+<div style={{marginBottom:"0.9rem"}}>
+  <div style={{fontSize:"0.65rem",fontWeight:600,color:C.textMid,marginBottom:"0.3rem",letterSpacing:"0.06em"}}>DATUM</div>
+  <input type="text" placeholder="z.B. 12. Mai 2026" value={newProj.date} onChange={e=>setNewProj(p=>({...p,date:e.target.value}))} style={mkInp()}/>
+</div>
+<div style={{marginBottom:"0.9rem"}}>
+  <div style={{fontSize:"0.65rem",fontWeight:600,color:C.textMid,marginBottom:"0.3rem",letterSpacing:"0.06em"}}>LOCATION</div>
+  <input type="text" placeholder="z.B. Rathaus Wien" value={newProj.location} onChange={e=>setNewProj(p=>({...p,location:e.target.value}))} style={mkInp()}/>
+</div>
+<div style={{marginBottom:"0.9rem"}}>
+  <div style={{fontSize:"0.65rem",fontWeight:600,color:C.textMid,marginBottom:"0.3rem",letterSpacing:"0.06em"}}>ERWARTETE GÄSTE</div>
+  <input type="number" placeholder="500" value={newProj.audience} onChange={e=>setNewProj(p=>({...p,audience:e.target.value}))} style={mkInp()}/>
+</div>
+<div style={{marginBottom:"0.9rem"}}>
+  <div style={{fontSize:"0.65rem",fontWeight:600,color:C.textMid,marginBottom:"0.3rem",letterSpacing:"0.06em"}}>SOCIAL REACH</div>
+  <input type="text" placeholder="15.000" value={newProj.reach} onChange={e=>setNewProj(p=>({...p,reach:e.target.value}))} style={mkInp()}/>
+</div>
+        <div style={{marginBottom:"1.25rem"}}>
+          <div style={{fontSize:"0.65rem",fontWeight:600,color:C.textMid,marginBottom:"0.3rem",letterSpacing:"0.06em"}}>BESCHREIBUNG</div>
+          <textarea rows={3} placeholder="Kurze Beschreibung..." value={newProj.description} onChange={e=>setNewProj(p=>({...p,description:e.target.value}))} style={{...mkInp(),resize:"none"}}/>
+        </div>
+        <div style={{display:"flex",gap:"0.65rem"}}>
+          <button onClick={createProj} disabled={!newProj.name} style={{flex:1,background:C.accent,color:"#fff",border:"none",borderRadius:12,padding:"0.9rem",fontWeight:700,cursor:"pointer",opacity:newProj.name?1:0.5}}>Erstellen</button>
+          <button onClick={()=>setShowNewProj(false)} style={{flex:1,background:C.bg,color:C.textMid,border:`1.5px solid ${C.border}`,borderRadius:12,padding:"0.9rem",cursor:"pointer"}}>Abbrechen</button>
+        </div>
+      </Sheet>}
+
+      {editPkg && <Sheet onClose={()=>setEditPkg(null)}>
+        <div style={{fontSize:"1rem",fontWeight:800,marginBottom:"1.25rem"}}>Paket bearbeiten</div>
+        {[["Paketname","name","text"],["Preis (€)","price","number"],["Verfügbare Slots","slots","number"]].map(([label,key,type])=>(
+          <div key={key} style={{marginBottom:"0.9rem"}}>
+            <div style={{fontSize:"0.65rem",fontWeight:600,color:C.textMid,marginBottom:"0.3rem",letterSpacing:"0.06em"}}>{label.toUpperCase()}</div>
+            <input type={type} value={editPkg[key]} onChange={e=>setEditPkg(p=>({...p,[key]:type==="number"?parseInt(e.target.value)||0:e.target.value}))} style={mkInp()}/>
+          </div>
+        ))}
+        <div style={{marginBottom:"0.9rem"}}>
+          <div style={{fontSize:"0.65rem",fontWeight:600,color:C.textMid,marginBottom:"0.5rem",letterSpacing:"0.06em"}}>FARBE</div>
+          <div style={{display:"flex",gap:"0.5rem"}}>
+            {["#e8500a","#d97706","#64748b","#2563eb","#16a34a","#7c3aed"].map(col=>(
+              <div key={col} onClick={()=>setEditPkg(p=>({...p,color:col}))} style={{width:28,height:28,borderRadius:"50%",background:col,border:`3px solid ${editPkg.color===col?"#1a1814":"transparent"}`,cursor:"pointer"}}/>
+            ))}
+          </div>
+        </div>
+        <div style={{marginBottom:"1.25rem"}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:"0.5rem"}}>
+            <div style={{fontSize:"0.65rem",fontWeight:600,color:C.textMid,letterSpacing:"0.06em"}}>BENEFITS</div>
+            <button onClick={()=>setEditPkg(p=>({...p,benefits:[...p.benefits,""]}))} style={{fontSize:"0.72rem",color:C.accent,background:"none",border:"none",cursor:"pointer",fontWeight:600}}>+ Hinzufügen</button>
+          </div>
+          {editPkg.benefits.map((b,i)=>(
+            <div key={i} style={{display:"flex",gap:"0.5rem",marginBottom:"0.5rem",alignItems:"center"}}>
+              <input value={b} onChange={e=>setEditPkg(p=>({...p,benefits:p.benefits.map((x,j)=>j===i?e.target.value:x)}))} style={{...mkInp(),flex:1,width:"auto"}} placeholder="Benefit..."/>
+              <button onClick={()=>setEditPkg(p=>({...p,benefits:p.benefits.filter((_,j)=>j!==i)}))} style={{background:"#fef2f2",color:"#dc2626",border:"none",borderRadius:8,width:32,height:32,cursor:"pointer"}}>×</button>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:"0.65rem"}}>
+          <button onClick={savePkg} style={{flex:1,background:C.accent,color:"#fff",border:"none",borderRadius:12,padding:"0.9rem",fontWeight:700,cursor:"pointer"}}>Speichern</button>
+          <button onClick={()=>setEditPkg(null)} style={{flex:1,background:C.bg,color:C.textMid,border:`1.5px solid ${C.border}`,borderRadius:12,padding:"0.9rem",cursor:"pointer"}}>Abbrechen</button>
+        </div>
+      </Sheet>}
+
+      {selected && <Sheet onClose={()=>setSelected(null)}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"1.25rem"}}>
+          <div><div style={{fontSize:"1.1rem",fontWeight:800,marginBottom:"0.2rem"}}>{selected.company}</div><div style={{fontSize:"0.8rem",color:C.textMid}}>{selected.contact}</div><div style={{fontSize:"0.75rem",color:C.textLight}}>{selected.email}</div></div>
+          <Badge status={selected.status}/>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0.65rem",marginBottom:"1.25rem"}}>
+          {[["Paket",selected.package],["Wert",`€${selected.value.toLocaleString("de-DE")}`],["Geöffnet",selected.opened]].map(([l,v])=>(
+            <div key={l} style={{background:C.bg,borderRadius:10,padding:"0.75rem",border:`1px solid ${C.border}`,textAlign:"center"}}>
+              <div style={{fontSize:"0.58rem",color:C.textLight,fontWeight:600,letterSpacing:"0.06em",marginBottom:"0.3rem"}}>{l.toUpperCase()}</div>
+              <div style={{fontSize:"0.85rem",fontWeight:700}}>{v}</div>
+            </div>
+          ))}
+        </div>
+        {selected.notes && <div style={{background:C.bg,borderRadius:10,padding:"0.85rem",marginBottom:"1.25rem",border:`1px solid ${C.border}`}}><div style={{fontSize:"0.62rem",color:C.textLight,fontWeight:600,marginBottom:"0.3rem"}}>NOTIZ</div><div style={{fontSize:"0.85rem"}}>{selected.notes}</div></div>}
+        {selected.status==="sent" && <div style={{background:C.accentSoft,border:`1px solid ${C.accentBorder}`,borderRadius:10,padding:"0.85rem",marginBottom:"1.25rem"}}><div style={{fontSize:"0.78rem",color:C.accent,fontWeight:600}}>💡 Pitch geöffnet {selected.opened} — jetzt anrufen!</div></div>}
+        <div style={{marginBottom:"1.25rem"}}>
+          <div style={{fontSize:"0.62rem",color:C.textLight,fontWeight:600,marginBottom:"0.6rem"}}>STATUS ÄNDERN</div>
+          <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap"}}>
+            {Object.entries(STATUS_CONFIG).map(([key,val])=>(
+              <button key={key} onClick={()=>updStatus(selected.id,key)} style={{padding:"0.4rem 0.85rem",borderRadius:99,border:`1.5px solid ${selected.status===key?val.color:C.border}`,background:selected.status===key?val.bg:C.surface,color:selected.status===key?val.color:C.textMid,fontSize:"0.75rem",fontWeight:600,cursor:"pointer"}}>{val.label}</button>
+            ))}
+          </div>
+        </div>
+        {selected.status==="draft" && <button onClick={()=>{sendPitch(selected.id);setSelected(null);}} style={{width:"100%",background:C.accent,color:"#fff",border:"none",borderRadius:12,padding:"0.9rem",fontWeight:700,cursor:"pointer"}}>📨 Pitch-Link senden</button>}
+        <button onClick={()=>setSelected(null)} style={{width:"100%",marginTop:"0.65rem",background:"none",color:C.textMid,border:`1.5px solid ${C.border}`,borderRadius:12,padding:"0.8rem",cursor:"pointer"}}>Schließen</button>
+      </Sheet>}
+
+      {showAdd && <Sheet onClose={()=>setShowAdd(false)}>
+        <div style={{fontSize:"1rem",fontWeight:800,marginBottom:"1.25rem"}}>Neuen Sponsor hinzufügen</div>
+        {[["Unternehmen","company","text","Erste Bank AG"],["Ansprechpartner","contact","text","Maria Huber"],["E-Mail","email","email","maria@firma.at"]].map(([label,key,type,ph])=>(
+          <div key={key} style={{marginBottom:"0.9rem"}}>
+            <div style={{fontSize:"0.65rem",fontWeight:600,color:C.textMid,marginBottom:"0.3rem",letterSpacing:"0.06em"}}>{label.toUpperCase()}</div>
+            <input type={type} placeholder={ph} value={newSponsor[key]} onChange={e=>setNewSponsor(p=>({...p,[key]:e.target.value}))} style={mkInp()}/>
+          </div>
+        ))}
+        <div style={{marginBottom:"1.25rem"}}>
+          <div style={{fontSize:"0.65rem",fontWeight:600,color:C.textMid,marginBottom:"0.3rem",letterSpacing:"0.06em"}}>PAKET</div>
+          <select value={newSponsor.package} onChange={e=>setNewSponsor(p=>({...p,package:e.target.value}))} style={mkInp()}>
+            {proj.packages.map(p=><option key={p.id} value={p.name}>{p.name} — €{p.price.toLocaleString("de-DE")}</option>)}
+          </select>
+        </div>
+        <div style={{display:"flex",gap:"0.65rem"}}>
+          <button onClick={addSponsor} disabled={!newSponsor.company} style={{flex:1,background:C.accent,color:"#fff",border:"none",borderRadius:12,padding:"0.9rem",fontWeight:700,cursor:"pointer",opacity:newSponsor.company?1:0.5}}>Hinzufügen</button>
+          <button onClick={()=>setShowAdd(false)} style={{flex:1,background:C.bg,color:C.textMid,border:`1.5px solid ${C.border}`,borderRadius:12,padding:"0.9rem",cursor:"pointer"}}>Abbrechen</button>
+        </div>
+      </Sheet>}
+
+      {/* TOP BAR */}
+      <div style={{background:C.surface,borderBottom:`1px solid ${C.border}`,padding:"0.85rem 1.25rem",position:"sticky",top:0,zIndex:50}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{display:"flex",alignItems:"center",gap:"0.5rem"}}>
+            <div style={{width:28,height:28,background:C.accent,borderRadius:7,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.8rem"}}>⚡</div>
+            <span style={{fontSize:"0.9rem",fontWeight:800,letterSpacing:"-0.02em"}}>SponsorMatch</span>
+          </div>
+          <button onClick={()=>setShowProjects(true)} style={{display:"flex",alignItems:"center",gap:"0.4rem",background:C.bg,border:`1px solid ${C.border}`,borderRadius:99,padding:"0.35rem 0.85rem",cursor:"pointer",maxWidth:200}}>
+            <span style={{fontSize:"0.72rem",fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{proj.name}</span>
+            <span style={{fontSize:"0.65rem",color:C.textLight}}>▾</span>
+          </button>
+        </div>
+      </div>
+
+      <div style={{padding:"1.25rem"}}>
+
+        {page==="dashboard" && <div>
+          <div style={{marginBottom:"1.5rem"}}>
+            <div style={{fontSize:"0.62rem",fontWeight:600,letterSpacing:"0.1em",color:C.textLight,marginBottom:"0.3rem"}}>MEIN EVENT</div>
+            <h1 style={{fontSize:"1.4rem",fontWeight:800,letterSpacing:"-0.03em",margin:"0 0 0.2rem",fontFamily:"Georgia,serif"}}>{proj.name}</h1>
+            <div style={{fontSize:"0.75rem",color:C.textMid}}>{proj.date} · {proj.location}</div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0.75rem",marginBottom:"1.5rem"}}>
+            {[["Bestätigt",`€${confirmed.toLocaleString("de-DE")}`,"gesichert",C.green],["Pipeline",`€${pTotal.toLocaleString("de-DE")}`,"Potenzial",C.blue],["Aktive Leads",proj.pipeline.filter(s=>["sent","negotiating"].includes(s.status)).length,"in Verhandlung",C.accent],["Conversion",proj.pipeline.length?`${Math.round(proj.pipeline.filter(s=>s.status==="confirmed").length/proj.pipeline.length*100)}%`:"—","Abschlussquote",C.amber]].map(([label,value,sub,color])=>(
+              <div key={label} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"1rem 1.1rem"}}>
+                <div style={{fontSize:"0.6rem",fontWeight:600,letterSpacing:"0.08em",color:C.textLight,marginBottom:"0.4rem"}}>{label.toUpperCase()}</div>
+                <div style={{fontSize:"1.4rem",fontWeight:800,color,lineHeight:1,marginBottom:"0.2rem",fontFamily:"Georgia,serif"}}>{value}</div>
+                <div style={{fontSize:"0.7rem",color:C.textMid}}>{sub}</div>
+              </div>
+            ))}
+          </div>
+          {proj.pipeline.some(s=>s.status==="sent") && <div style={{background:C.accentSoft,border:`1px solid ${C.accentBorder}`,borderRadius:14,padding:"1rem 1.1rem",marginBottom:"1.5rem",display:"flex",gap:"0.75rem"}}>
+            <div style={{fontSize:"1.2rem"}}>💡</div>
+            <div>
+              <div style={{fontSize:"0.75rem",fontWeight:700,color:C.accent,marginBottom:"0.2rem"}}>Jetzt handeln</div>
+              <div style={{fontSize:"0.8rem",lineHeight:1.5}}><strong>{proj.pipeline.find(s=>s.status==="sent")?.company}</strong> hat deinen Pitch kürzlich geöffnet!</div>
+              <button onClick={()=>setPage("pipeline")} style={{marginTop:"0.6rem",background:C.accent,color:"#fff",border:"none",borderRadius:8,padding:"0.45rem 1rem",fontSize:"0.75rem",fontWeight:600,cursor:"pointer"}}>Zur Pipeline →</button>
+            </div>
+          </div>}
+          <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden"}}>
+            <div style={{padding:"0.9rem 1.1rem",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between"}}>
+              <div style={{fontSize:"0.82rem",fontWeight:700}}>Letzte Aktivität</div>
+              <button onClick={()=>setPage("pipeline")} style={{fontSize:"0.72rem",color:C.accent,background:"none",border:"none",cursor:"pointer",fontWeight:600}}>Alle →</button>
+            </div>
+            {proj.pipeline.length===0
+              ? <div style={{padding:"2rem",textAlign:"center",color:C.textLight,fontSize:"0.85rem"}}>Noch keine Sponsoren</div>
+              : proj.pipeline.slice(0,4).map((s,i)=>(
+                <div key={s.id} onClick={()=>setSelected(s)} style={{display:"flex",alignItems:"center",gap:"0.85rem",padding:"0.85rem 1.1rem",borderBottom:i<Math.min(3,proj.pipeline.length-1)?`1px solid ${C.border}`:"none",cursor:"pointer"}}>
+                  <div style={{width:36,height:36,borderRadius:9,background:C.bg,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.7rem",fontWeight:800,color:C.textMid,flexShrink:0}}>{s.company.slice(0,2).toUpperCase()}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:"0.85rem",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.company}</div>
+                    <div style={{fontSize:"0.7rem",color:C.textMid,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.notes}</div>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"0.3rem",flexShrink:0}}>
+                    <Badge status={s.status}/><div style={{fontSize:"0.62rem",color:C.textLight}}>€{s.value.toLocaleString("de-DE")}</div>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        </div>}
+
+        {page==="pipeline" && <div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"1.25rem"}}>
+            <div><h2 style={{fontSize:"1.3rem",fontWeight:800,margin:"0 0 0.2rem",fontFamily:"Georgia,serif"}}>Pipeline</h2><div style={{fontSize:"0.75rem",color:C.textMid}}>{proj.pipeline.length} Kontakte · €{pTotal.toLocaleString("de-DE")}</div></div>
+            <button onClick={()=>setShowAdd(true)} style={{background:C.accent,color:"#fff",border:"none",borderRadius:10,padding:"0.6rem 1rem",fontSize:"0.8rem",fontWeight:700,cursor:"pointer"}}>+ Neu</button>
+          </div>
+          {proj.pipeline.length===0 && <div style={{textAlign:"center",padding:"3rem 1rem",color:C.textLight}}><div style={{fontSize:"2rem",marginBottom:"0.75rem"}}>📭</div><div style={{fontWeight:600,marginBottom:"0.75rem"}}>Noch keine Sponsoren</div><button onClick={()=>setShowAdd(true)} style={{background:C.accent,color:"#fff",border:"none",borderRadius:10,padding:"0.6rem 1.2rem",fontSize:"0.82rem",fontWeight:700,cursor:"pointer"}}>+ Hinzufügen</button></div>}
+          {[["draft","📝 Entwurf"],["sent","📨 Gesendet"],["negotiating","🤝 Verhandlung"],["confirmed","✅ Bestätigt"]].map(([status,label])=>{
+            const items = proj.pipeline.filter(s=>s.status===status);
+            if(!items.length) return null;
+            const cfg = STATUS_CONFIG[status];
+            return <div key={status} style={{marginBottom:"1.5rem"}}>
+              <div style={{display:"flex",alignItems:"center",gap:"0.5rem",marginBottom:"0.65rem"}}>
+                <span style={{fontSize:"0.72rem",fontWeight:700,color:cfg.color}}>{label}</span>
+                <span style={{fontSize:"0.65rem",fontWeight:700,background:cfg.bg,color:cfg.color,padding:"0.1rem 0.45rem",borderRadius:99}}>{items.length}</span>
+              </div>
+              {items.map(s=>(
+                <div key={s.id} onClick={()=>setSelected(s)} style={{background:C.surface,border:`1px solid ${C.border}`,borderLeft:`3px solid ${cfg.color}`,borderRadius:12,padding:"1rem 1.1rem",cursor:"pointer",marginBottom:"0.6rem"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:"0.4rem"}}>
+                    <div><div style={{fontSize:"0.9rem",fontWeight:700}}>{s.company}</div><div style={{fontSize:"0.72rem",color:C.textMid}}>{s.contact}</div></div>
+                    <div style={{textAlign:"right"}}><div style={{fontSize:"0.9rem",fontWeight:800,fontFamily:"Georgia,serif"}}>€{s.value.toLocaleString("de-DE")}</div><div style={{fontSize:"0.65rem",color:C.textLight}}>{s.package}</div></div>
+                  </div>
+                  {s.opened!=="—" && <div style={{fontSize:"0.7rem",color:status==="sent"?C.accent:C.textLight,fontWeight:status==="sent"?600:400,marginTop:"0.4rem"}}>👁 Geöffnet {s.opened}{status==="sent"&&" · Jetzt anrufen!"}</div>}
+                  {status==="draft" && <button onClick={e=>{e.stopPropagation();sendPitch(s.id);}} style={{width:"100%",marginTop:"0.65rem",background:C.accentSoft,color:C.accent,border:`1px solid ${C.accentBorder}`,borderRadius:8,padding:"0.5rem",fontSize:"0.75rem",fontWeight:700,cursor:"pointer"}}>📨 Pitch senden</button>}
+                </div>
+              ))}
+            </div>;
+          })}
+        </div>}
+
+        {page==="packages" && <div>
+          <div style={{marginBottom:"1.25rem"}}>
+            <h2 style={{fontSize:"1.3rem",fontWeight:800,margin:"0 0 0.2rem",fontFamily:"Georgia,serif"}}>Sponsoring-Pakete</h2>
+            <div style={{fontSize:"0.75rem",color:C.textMid}}>Tippe auf ✏️ zum Bearbeiten</div>
+          </div>
+          {proj.packages.map(pkg=>(
+            <div key={pkg.id} style={{background:C.surface,border:`2px solid ${C.border}`,borderRadius:16,padding:"1.25rem",marginBottom:"1rem"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"0.85rem"}}>
+                <div>
+                  <div style={{fontSize:"0.65rem",fontWeight:700,letterSpacing:"0.1em",color:pkg.color,marginBottom:"0.25rem"}}>{pkg.name.toUpperCase()}</div>
+                  <div style={{fontSize:"1.6rem",fontWeight:800,fontFamily:"Georgia,serif"}}>€{pkg.price.toLocaleString("de-DE")}</div>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"0.4rem"}}>
+                  <button onClick={()=>setEditPkg({...pkg})} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"0.35rem 0.75rem",fontSize:"0.75rem",fontWeight:600,cursor:"pointer",color:C.textMid}}>✏️ Bearbeiten</button>
+                  <div style={{fontSize:"0.65rem",fontWeight:700,color:pkg.taken>=pkg.slots?C.green:C.textLight}}>{pkg.taken>=pkg.slots?"AUSGEBUCHT":`${pkg.slots-pkg.taken} von ${pkg.slots} frei`}</div>
+                  <div style={{height:5,width:70,background:C.bg,borderRadius:99,overflow:"hidden",border:`1px solid ${C.border}`}}><div style={{height:"100%",width:`${Math.min(100,pkg.taken/pkg.slots*100)}%`,background:pkg.color,borderRadius:99}}/></div>
+                </div>
+              </div>
+              {pkg.benefits.map((b,j)=>(
+                <div key={j} style={{display:"flex",gap:"0.5rem",alignItems:"center",marginBottom:"0.35rem"}}>
+                  <div style={{width:15,height:15,borderRadius:"50%",background:pkg.color,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><span style={{fontSize:"0.5rem",color:"#fff"}}>✓</span></div>
+                  <span style={{fontSize:"0.78rem",color:C.textMid}}>{b}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>}
+
+        {page==="preview" && <div>
+          <div style={{background:C.amberSoft,border:`1px solid ${C.amber}55`,borderRadius:12,padding:"0.75rem 1rem",marginBottom:"1.25rem",display:"flex",gap:"0.6rem",alignItems:"center"}}>
+            <span>👁</span><div style={{fontSize:"0.78rem"}}>So sieht dein Angebot für Sponsoren aus</div>
+          </div>
+          <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:20,overflow:"hidden"}}>
+            <div style={{background:C.text,padding:"2rem 1.5rem",position:"relative",overflow:"hidden"}}>
+              <div style={{position:"absolute",top:-30,right:-30,width:140,height:140,borderRadius:"50%",background:"rgba(232,80,10,0.15)"}}/>
+              <div style={{position:"relative"}}>
+                <div style={{fontSize:"0.6rem",fontWeight:600,letterSpacing:"0.15em",color:"rgba(255,255,255,0.4)",marginBottom:"0.6rem"}}>SPONSORING-ANGEBOT</div>
+                <h1 style={{fontSize:"1.5rem",fontWeight:800,color:"#fff",margin:"0 0 0.75rem",fontFamily:"Georgia,serif"}}>{proj.name}</h1>
+                {[["📅",proj.date],["📍",proj.location],["👥",`${proj.audience} Gäste · ${proj.reach} Reach`]].map(([icon,text])=>(
+                  <div key={text} style={{display:"flex",gap:"0.5rem",fontSize:"0.78rem",color:"rgba(255,255,255,0.65)",marginBottom:"0.25rem"}}><span>{icon}</span><span>{text}</span></div>
+                ))}
+              </div>
+            </div>
+            <div style={{padding:"1.5rem"}}>
+              {proj.description && <div style={{marginBottom:"1.5rem"}}><div style={{fontSize:"0.62rem",fontWeight:700,letterSpacing:"0.1em",color:C.textLight,marginBottom:"0.75rem"}}>ÜBER DAS EVENT</div><p style={{fontSize:"0.88rem",lineHeight:1.7,margin:0}}>{proj.description}</p></div>}
+              <div style={{marginBottom:"2rem"}}>
+                <div style={{fontSize:"0.62rem",fontWeight:700,letterSpacing:"0.1em",color:C.textLight,marginBottom:"0.75rem"}}>SPONSORING-PAKETE</div>
+                {proj.packages.map((pkg,i)=>(
+                  <div key={pkg.id} style={{border:`2px solid ${i===0?pkg.color:C.border}`,borderRadius:14,padding:"1rem 1.1rem",background:i===0?C.accentSoft:C.surface,marginBottom:"0.75rem"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"0.5rem"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:"0.5rem"}}>
+                        <span style={{fontSize:"0.7rem",fontWeight:700,color:pkg.color,letterSpacing:"0.08em"}}>{pkg.name.toUpperCase()}</span>
+                        {i===0&&<span style={{fontSize:"0.6rem",background:C.accent,color:"#fff",padding:"0.1rem 0.45rem",borderRadius:99,fontWeight:700}}>EMPFOHLEN</span>}
+                      </div>
+                      <span style={{fontSize:"1.1rem",fontWeight:800,fontFamily:"Georgia,serif"}}>€{pkg.price.toLocaleString("de-DE")}</span>
+                    </div>
+                    <div style={{display:"flex",gap:"0.4rem",flexWrap:"wrap"}}>
+                      {pkg.benefits.slice(0,3).map((b,j)=><span key={j} style={{fontSize:"0.68rem",color:C.textMid,background:C.bg,padding:"0.2rem 0.5rem",borderRadius:6,border:`1px solid ${C.border}`}}>{b}</span>)}
+                      {pkg.benefits.length>3&&<span style={{fontSize:"0.68rem",color:C.textLight}}>+{pkg.benefits.length-3} weitere</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{background:C.text,borderRadius:16,padding:"1.5rem",textAlign:"center"}}>
+                <div style={{fontSize:"1rem",fontWeight:700,color:"#fff",marginBottom:"0.4rem",fontFamily:"Georgia,serif"}}>Interesse an einer Partnerschaft?</div>
+                <div style={{fontSize:"0.78rem",color:"rgba(255,255,255,0.5)",marginBottom:"1.25rem"}}>Klicken Sie hier oder antworten Sie direkt</div>
+                <button style={{background:C.accent,color:"#fff",border:"none",borderRadius:12,padding:"0.85rem 2rem",fontSize:"0.88rem",fontWeight:700,cursor:"pointer"}}>Interesse signalisieren →</button>
+              </div>
+            </div>
+          </div>
+        </div>}
+      </div>
+
+      <div style={{position:"fixed",bottom:0,left:0,right:0,background:C.surface,borderTop:`1px solid ${C.border}`,display:"flex",zIndex:50}}>
+        {TABS.map(tab=>(
+          <button key={tab.id} onClick={()=>setPage(tab.id)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"0.65rem 0.25rem",background:"none",border:"none",cursor:"pointer",gap:"0.25rem"}}>
+            <span style={{fontSize:"1.2rem",lineHeight:1}}>{tab.icon}</span>
+            <span style={{fontSize:"0.6rem",fontWeight:page===tab.id?700:400,color:page===tab.id?C.accent:C.textLight}}>{tab.label}</span>
+            {page===tab.id&&<div style={{width:4,height:4,borderRadius:"50%",background:C.accent}}/>}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+cp components/SponsorMatch.jsx components/SponsorMatch.backup.jsx
+

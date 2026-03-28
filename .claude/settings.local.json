@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(vercel --prod 2>&1)",
+      "Bash(ls /Users/denizer/sponsormatch/.env* 2>/dev/null; cat /Users/denizer/sponsormatch/.env.local 2>/dev/null || echo \"keine .env.local\")",
+      "Bash(echo \"https://siuquiacwzwexgcmvjix.supabase.co\" | vercel env add NEXT_PUBLIC_SUPABASE_URL production 2>&1)",
+      "Bash(vercel env:*)",
+      "Bash(sed -i '' 's/#0D9488/#00B4BF/g' components/SponsorMatch.jsx app/vereinbarung/page.tsx app/beta-login/page.tsx components/LandingPage.tsx && npm run build 2>&1 | tail -3 && vercel --prod 2>&1 | tail -3)",
+      "Bash(sed -i '' 's/#00B4BF/#00B4ED/g' components/SponsorMatch.jsx app/vereinbarung/page.tsx app/beta-login/page.tsx components/LandingPage.tsx && npm run build 2>&1 | tail -3 && vercel --prod 2>&1 | tail -3)",
+      "Bash(sed -i '' 's/#00B4ED/#00D4BA/g' components/SponsorMatch.jsx app/vereinbarung/page.tsx app/beta-login/page.tsx components/LandingPage.tsx && npm run build 2>&1 | tail -3 && vercel --prod 2>&1 | tail -3)",
+      "Bash(sed -i '' 's/#00D4BA/#00C7D4/g' components/SponsorMatch.jsx app/vereinbarung/page.tsx app/beta-login/page.tsx components/LandingPage.tsx && npm run build 2>&1 | tail -3 && vercel --prod 2>&1 | tail -3)",
+      "Bash(sed -i '' 's/#00C7D4/#03ABB6/g' components/SponsorMatch.jsx app/vereinbarung/page.tsx app/beta-login/page.tsx components/LandingPage.tsx && npm run build 2>&1 | tail -3 && vercel --prod 2>&1 | tail -3)",
+      "Bash(sed -i '' 's/#03ABB6/#07929B/g' components/SponsorMatch.jsx app/vereinbarung/page.tsx app/beta-login/page.tsx components/LandingPage.tsx && npm run build 2>&1 | tail -3 && vercel --prod 2>&1 | tail -3)",
+      "Bash(which supabase:*)",
+      "Bash(printf 'DeniZer1997!' | vercel env add ADMIN_PASSWORD production 2>&1 && vercel --prod 2>&1 | tail -3)",
+      "Bash(grep -rn \"sendEmail\\\\|api/email\\\\|nodemailer\\\\|resend\" /Users/denizer/sponsormatch --include=\"*.ts\" --include=\"*.js\" --include=\"*.tsx\" --include=\"*.jsx\" 2>/dev/null | head -30)",
+      "Bash(npx vercel:*)",
+      "Bash(grep -r \"profiles\" /Users/denizer/sponsormatch/app --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.js\" --include=\"*.jsx\" 2>/dev/null | grep -v node_modules | head -20)",
+      "Bash(vercel --version 2>/dev/null && gh --version 2>/dev/null)",
+      "Bash(which gh:*)",
+      "Bash(which git:*)"
+    ]
+  }
+}

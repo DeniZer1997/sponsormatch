@@ -1,0 +1,152 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  /* SponsorMatch Design Tokens */
+  --sm-accent:        #e8500a;
+  --sm-accent-hover:  #cf4709;
+  --sm-accent-soft:   #fff3ee;
+  --sm-surface:       #f8f7f4;
+  --sm-border:        #e8e4dd;
+  --sm-text:          #1a1814;
+  --sm-text-mid:      #6b6560;
+  --sm-text-light:    #a09b94;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ── Notification Toast Animation ── */
+@keyframes sm-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+.sm-toast {
+  animation: sm-toast-in 0.18s ease-out forwards;
+}
+
+/* ── Tab-Bar Active Indicator ── */
+.sm-tab-active-bar {
+  /* Farbe wird via style-Prop in SponsorMatch.jsx gesetzt */
+  width: 20px;
+  height: 2.5px;
+  border-radius: 9999px;
+  margin-top: 2px;
+}
+
+/* ── Tab Button ── */
+.sm-tab-btn {
+  transition: background-color 0.15s ease;
+}
+
+.sm-tab-btn:hover {
+  background-color: var(--sm-surface);
+}
+
+/* Bottom Navigation Wrapper */
+.sm-bottom-nav {
+  /* Layout via Inline-Styles in SponsorMatch.jsx — Klasse für externe Referenz */
+}
+
+/* ── Mobile Base Resets ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ── Touch-Friendly Tab Bar ── */
+@media (max-width: 768px) {
+  .sm-tab-btn {
+    min-height: 54px;
+  }
+}
+
+/* ── Mobile: kleinere Schrift in der Tab-Bar ── */
+@media (max-width: 380px) {
+  .sm-tab-label {
+    font-size: 0.58rem !important;
+  }
+}
+
+/* ── Sheet innen auf kleinen Screens ── */
+@media (max-width: 480px) {
+  .sm-sheet-inner {
+    padding: 1rem !important;
+  }
+}
+
+/* ── Pipeline Zeilen: wrap auf Mobile ── */
+@media (max-width: 480px) {
+  .sm-pipeline-row {
+    flex-wrap: wrap;
+  }
+  .sm-hide-mobile {
+    display: none !important;
+  }
+}
+
+/* ── Überlangen Text abschneiden ── */
+.sm-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* ── Stat-Karten: immer 2 Spalten ── */
+.sm-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+/* ── 3-Spalten-Grid: auf Mobile 2 Spalten ── */
+@media (max-width: 480px) {
+  .sm-grid-3 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .sm-grid-table {
+    grid-template-columns: 1fr auto !important;
+  }
+}
+
+/* ── Landing Page Nav: Mobile/Desktop Toggle ── */
+@media (max-width: 600px) {
+  .sm-nav-desktop { display: none !important; }
+  .sm-nav-mobile { display: flex !important; }
+}
+@media (min-width: 601px) {
+  .sm-nav-desktop { display: flex !important; }
+  .sm-nav-mobile { display: none !important; }
+}
