@@ -3,8 +3,6 @@ import { Resend } from "resend";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 // GET /api/team/invite?token=xxx — Invite-Details für Landing-Page
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
@@ -99,6 +97,7 @@ export async function POST(req: NextRequest) {
     </div>
   `;
 
+  const resend = new Resend(process.env.RESEND_API_KEY);
   await resend.emails.send({
     from: "SponsorMatch <noreply@sponsormatch-iota.vercel.app>",
     to: email.trim(),
