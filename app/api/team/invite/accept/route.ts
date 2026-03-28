@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   // Invite laden
   const { data: invite, error: inviteErr } = await supabaseAdmin
     .from("team_invites")
-    .select("id, email, role, accepted, organization_id")
+    .select("id, email, role, accepted, organization_id, expires_at")
     .eq("token", token)
     .single();
 
@@ -24,6 +24,10 @@ export async function POST(req: NextRequest) {
 
   if (invite.accepted) {
     return NextResponse.json({ error: "Diese Einladung wurde bereits angenommen" }, { status: 410 });
+  }
+
+  if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+    return NextResponse.json({ error: "Diese Einladung ist abgelaufen" }, { status: 410 });
   }
 
   // E-Mail-Check: Invite muss zur eingeloggten E-Mail passen

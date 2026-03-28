@@ -12,12 +12,15 @@ export async function GET(req: NextRequest) {
 
   const { data: invite, error } = await supabaseAdmin
     .from("team_invites")
-    .select("id, email, role, accepted, organization_id, invited_by")
+    .select("id, email, role, accepted, organization_id, invited_by, expires_at")
     .eq("token", token)
     .single();
 
   if (error || !invite) return NextResponse.json({ error: "Einladung nicht gefunden oder abgelaufen" }, { status: 404 });
   if (invite.accepted) return NextResponse.json({ error: "Diese Einladung wurde bereits angenommen" }, { status: 410 });
+  if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+    return NextResponse.json({ error: "Diese Einladung ist abgelaufen" }, { status: 410 });
+  }
 
   const { data: org } = await supabaseAdmin
     .from("organizations")
@@ -72,6 +75,7 @@ export async function POST(req: NextRequest) {
       email: email.trim().toLowerCase(),
       role: "member",
       accepted: false,
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     }, { onConflict: "organization_id,email" })
     .select()
     .single();
