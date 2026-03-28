@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { Zap, BarChart2, Package, Bot, Eye, Pencil, Mail, Check, Camera, Building2, Calendar, MapPin, Users, CheckCircle, FileText, Handshake, Inbox, Settings, Globe, ImageIcon, Target, AlertCircle, User, Plus, BookUser, Phone, Search, Trash2, History, Copy, ChevronDown, ChevronUp, PhoneCall, CalendarDays, Download, Loader2, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { TIER_CONFIG, hasFeature, canCreateEvent, canCreatePackage, canAddPipelineContact } from "@/lib/tier-config";
-import { loadAllUserData, getUserOrgId, upsertEvent, deleteEvent, replacePackages, replaceMehrwert, upsertPipelineEntry, upsertCall, upsertAppointment, upsertContact, deletePipelineEntry, deleteContact as deleteContactDb } from "@/lib/db";
+import { loadAllUserData, getUserOrgId, getUserProfile, upsertEvent, deleteEvent, replacePackages, replaceMehrwert, upsertPipelineEntry, upsertCall, upsertAppointment, upsertContact, deletePipelineEntry, deleteContact as deleteContactDb } from "@/lib/db";
 import { assembleProjects, assembleContacts, mapProjectToEventInsert, mapPackageToInsert, mapMehrwertToInsert, mapPipelineToInsert, mapCallToInsert, mapAppointmentToInsert, mapContactToInsert } from "@/lib/data-mappers";
 import { migrateLocalStorageToSupabase } from "@/lib/migrate-to-supabase";
 import { uploadEventBanner, uploadGalleryImage, uploadAgreementPdf, uploadAgreementPhoto, uploadSponsorMaterial } from "@/lib/storage";
@@ -689,6 +689,15 @@ export default function SponsorMatch() {
     if (branding) setUser(prev => prev ? { ...prev, ...branding } : prev);
     const tier = loadTier(uid);
     setUser(prev => prev ? { ...prev, tier } : prev);
+
+    // Rolle aus Supabase-Profil laden (admin/member)
+    try {
+      const profile = await getUserProfile(uid);
+      setUser(prev => prev ? { ...prev, role: profile.role } : prev);
+    } catch (e) {
+      console.warn('getUserProfile failed, defaulting to admin:', e);
+      setUser(prev => prev ? { ...prev, role: 'admin' } : prev);
+    }
 
     // Dev-Tier-Override via URL-Parameter (?devtier=pro|max|free)
     if (typeof window !== 'undefined') {

@@ -351,6 +351,25 @@ export async function deleteGalleryImage(imageId: string): Promise<void> {
 // Max 3 Request-Runden, alles parallel innerhalb jeder Runde.
 // ============================================================
 
+export interface UserProfile {
+  organization_id: string | null;
+  role: string;
+  display_name: string | null;
+}
+
+export async function getUserProfile(userId: string): Promise<UserProfile> {
+  const { data } = await supabase()
+    .from('profiles')
+    .select('organization_id, role, display_name')
+    .eq('id', userId)
+    .single();
+  return {
+    organization_id: data?.organization_id ?? null,
+    role: data?.role ?? 'admin',
+    display_name: data?.display_name ?? null,
+  };
+}
+
 export async function getUserOrgId(userId: string): Promise<string | null> {
   const { data } = await supabase()
     .from('profiles')
