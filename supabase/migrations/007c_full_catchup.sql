@@ -43,7 +43,6 @@ DROP POLICY IF EXISTS "org_select" ON public.organizations;
 CREATE POLICY "org_select" ON public.organizations FOR SELECT
   USING (id = public.current_org_id());
 
-DROP POLICY IF EXISTS "org_update" ON public.organizations FOR UPDATE;
 DROP POLICY IF EXISTS "org_update" ON public.organizations;
 CREATE POLICY "org_update" ON public.organizations FOR UPDATE
   USING (owner_id = auth.uid())
