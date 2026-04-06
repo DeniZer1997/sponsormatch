@@ -651,8 +651,11 @@ export default function SponsorMatch() {
   }, []);
 
   const initUserData = useCallback(async (uid) => {
+    let loadedEventCount = 0;
+
     try {
       const data = await loadAllUserData(uid);
+      loadedEventCount = data.events.length;
 
       if (data.events.length > 0 || data.contacts.length > 0) {
         // Supabase ist Source of Truth
@@ -701,22 +704,15 @@ export default function SponsorMatch() {
     try {
       const profile = await getUserProfile(uid);
       setUser(prev => prev ? { ...prev, role: profile.role } : prev);
-
-      // Onboarding für neue User: kein Event + kein Onboarding-Flag
-      const onboardedKey = `sm_onboarded_${uid}`;
-      if (!localStorage.getItem(onboardedKey)) {
-        let eventCount = 0;
-        try {
-          const d = await loadAllUserData(uid);
-          eventCount = d.events.length;
-        } catch { /* ignore */ }
-        if (eventCount === 0) {
-          setShowOnboarding(true);
-        }
-      }
     } catch (e) {
       console.warn('getUserProfile failed, defaulting to admin:', e);
       setUser(prev => prev ? { ...prev, role: 'admin' } : prev);
+    }
+
+    // Onboarding für neue User — unabhängig von getUserProfile
+    const onboardedKey = `sm_onboarded_${uid}`;
+    if (!localStorage.getItem(onboardedKey) && loadedEventCount === 0) {
+      setShowOnboarding(true);
     }
 
     // Dev-Tier-Override via URL-Parameter (?devtier=pro|max|free)
