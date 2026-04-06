@@ -298,8 +298,8 @@ function AuthScreen({ supabase, onAuthDone }) {
       setConfirmEmail(email);
       setMode("confirm");
     } else if (data?.session) {
-      // Direkt eingeloggt (kein E-Mail-Bestätigung) → Onboarding sofort zeigen
-      setShowOnboarding(true);
+      // Direkt eingeloggt → Onboarding im Parent triggern
+      if (onAuthDone) onAuthDone();
     }
   };
 
@@ -953,7 +953,7 @@ export default function SponsorMatch() {
     );
   }
 
-  if (!user) return <AuthScreen supabase={supabase} />;
+  if (!user) return <AuthScreen supabase={supabase} onAuthDone={() => setShowOnboarding(true)} />;
 
   const C = makeColors(user.accent||"#07929B");
   const proj = projects.find(p=>p.id===activeId);
