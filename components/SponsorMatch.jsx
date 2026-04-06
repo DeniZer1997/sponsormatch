@@ -297,8 +297,10 @@ function AuthScreen({ supabase, onAuthDone }) {
     if (data?.user && !data.session) {
       setConfirmEmail(email);
       setMode("confirm");
+    } else if (data?.session) {
+      // Direkt eingeloggt (kein E-Mail-Bestätigung) → Onboarding sofort zeigen
+      setShowOnboarding(true);
     }
-    // If session exists immediately (email confirmation disabled), onAuthStateChange handles it
   };
 
   const handleResetPassword = async () => {
@@ -709,11 +711,12 @@ export default function SponsorMatch() {
       setUser(prev => prev ? { ...prev, role: 'admin' } : prev);
     }
 
-    // Onboarding für neue User — unabhängig von getUserProfile
+    // Onboarding-Fallback für E-Mail-Bestätigungs-Flow (wenn via /auth/callback eingeloggt)
     const onboardedKey = `sm_onboarded_${uid}`;
     if (!localStorage.getItem(onboardedKey) && loadedEventCount === 0) {
       setShowOnboarding(true);
     }
+    localStorage.setItem(`sm_initDone_${uid}`, '1');
 
     // Dev-Tier-Override via URL-Parameter (?devtier=pro|max|free)
     if (typeof window !== 'undefined') {
