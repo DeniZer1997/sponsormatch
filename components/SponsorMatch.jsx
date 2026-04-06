@@ -603,6 +603,13 @@ export default function SponsorMatch() {
   // ── TIER / UPGRADE STATE ─────────────────────────────────────
   const [showUpgrade, setShowUpgrade] = useState(null); // null | { feature: string, requiredTier: 'pro'|'max' }
 
+  // ── ONBOARDING STATE ─────────────────────────────────────────
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState("welcome"); // "welcome" | "invite" | "done"
+  const [onboardingEmail, setOnboardingEmail] = useState("");
+  const [onboardingSending, setOnboardingSending] = useState(false);
+  const [onboardingInviteSent, setOnboardingInviteSent] = useState(false);
+
   // ── CONTACTS STATE ──────────────────────────────────────────
   const [contacts, setContacts] = useState([]);
   const [contactSearch, setContactSearch] = useState("");
@@ -694,6 +701,19 @@ export default function SponsorMatch() {
     try {
       const profile = await getUserProfile(uid);
       setUser(prev => prev ? { ...prev, role: profile.role } : prev);
+
+      // Onboarding für neue User: kein Event + kein Onboarding-Flag
+      const onboardedKey = `sm_onboarded_${uid}`;
+      if (!localStorage.getItem(onboardedKey)) {
+        let eventCount = 0;
+        try {
+          const d = await loadAllUserData(uid);
+          eventCount = d.events.length;
+        } catch { /* ignore */ }
+        if (eventCount === 0) {
+          setShowOnboarding(true);
+        }
+      }
     } catch (e) {
       console.warn('getUserProfile failed, defaulting to admin:', e);
       setUser(prev => prev ? { ...prev, role: 'admin' } : prev);
@@ -1284,6 +1304,26 @@ export default function SponsorMatch() {
     } catch(e) { notify("Fehler: " + e.message); }
   };
 
+  const handleOnboardingInvite = async () => {
+    if (!onboardingEmail.trim() || onboardingSending) return;
+    setOnboardingSending(true);
+    try {
+      const res = await fetch('/api/team/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: onboardingEmail.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setOnboardingInviteSent(true);
+      notify("Einladung gesendet");
+    } catch(e) {
+      notify("Fehler: " + e.message);
+    } finally {
+      setOnboardingSending(false);
+    }
+  };
+
   return (
     <div style={{width:"100%",minHeight:"100vh",background:C.bg,fontFamily:"'Helvetica Neue',Helvetica,sans-serif",color:C.text,paddingBottom:"calc(80px + env(safe-area-inset-bottom, 0px))"}}>
       <style>{`* { box-sizing:border-box } button,input,select,textarea,div[contenteditable] { font-family:inherit }`}</style>
@@ -1361,6 +1401,251 @@ export default function SponsorMatch() {
         </div>
         <button onClick={async ()=>{setShowProjects(false);await supabase.auth.signOut();router.push('/');}} style={{width:"100%",marginTop:"0.65rem",background:"none",color:C.textLight,border:`1px solid ${C.border}`,borderRadius:12,padding:"0.8rem",fontSize:"0.85rem",cursor:"pointer"}}>Ausloggen</button>
       </Sheet>}
+
+      {/* ONBOARDING MODAL */}
+      {showOnboarding && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="onboarding-title"
+          style={{
+            position: "fixed", inset: 0,
+            background: "rgba(0,0,0,0.52)",
+            zIndex: 300,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "1rem",
+          }}
+        >
+          <div style={{
+            background: "#ffffff",
+            borderRadius: 20,
+            boxShadow: "0 8px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10)",
+            padding: "2rem 1.75rem",
+            width: "100%",
+            maxWidth: 420,
+            position: "relative",
+          }}>
+
+            {/* Schritt 1 — Willkommen */}
+            {onboardingStep === "welcome" && (<>
+              <div style={{textAlign:"center",marginBottom:"1.5rem"}}>
+                <div style={{
+                  width: 60, height: 60,
+                  background: "#fff3ee",
+                  border: "2px solid #e8500a44",
+                  borderRadius: 16,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  margin: "0 auto 1rem",
+                }}>
+                  <CheckCircle size={28} strokeWidth={1.5} style={{color:"#e8500a"}}/>
+                </div>
+                <h2 id="onboarding-title" style={{
+                  fontFamily: "Georgia,serif",
+                  fontWeight: 700,
+                  fontSize: "1.25rem",
+                  color: "#1a1a1a",
+                  margin: "0 0 0.65rem",
+                }}>Willkommen bei SponsorMatch</h2>
+                <p style={{
+                  fontSize: "0.93rem",
+                  color: "#6b7280",
+                  lineHeight: 1.65,
+                  margin: 0,
+                }}>
+                  Dein Konto ist bereit. Möchtest du gleich
+                  {" "}<strong style={{color:"#1a1a1a"}}>Teammitglieder einladen</strong>?
+                </p>
+              </div>
+
+              <button
+                onClick={() => { setOnboardingStep("invite"); setOnboardingInviteSent(false); setOnboardingEmail(""); }}
+                style={{
+                  width: "100%",
+                  background: "#e8500a",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 10,
+                  padding: "0.85rem 1rem",
+                  fontSize: "0.95rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  marginBottom: "0.65rem",
+                }}
+              >
+                <Users size={16} strokeWidth={2}/>
+                Teammitglied einladen
+              </button>
+
+              <button
+                onClick={() => {
+                  if (user?.id) localStorage.setItem(`sm_onboarded_${user.id}`, "1");
+                  setShowOnboarding(false);
+                }}
+                style={{
+                  width: "100%",
+                  background: "transparent",
+                  color: "#6b7280",
+                  border: "1.5px solid #e5e7eb",
+                  borderRadius: 10,
+                  padding: "0.8rem 1rem",
+                  fontSize: "0.93rem",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                }}
+              >
+                Später
+              </button>
+            </>)}
+
+            {/* Schritt 2 — Einladen */}
+            {onboardingStep === "invite" && (<>
+              <button
+                onClick={() => setOnboardingStep("welcome")}
+                aria-label="Zurück"
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  color: "#6b7280", fontSize: "0.85rem", padding: 0,
+                  display: "flex", alignItems: "center", gap: "0.3rem",
+                  marginBottom: "1.25rem",
+                }}
+              >
+                ← Zurück
+              </button>
+
+              <h2 id="onboarding-title" style={{
+                fontFamily: "Georgia,serif",
+                fontWeight: 700,
+                fontSize: "1.15rem",
+                color: "#1a1a1a",
+                margin: "0 0 0.4rem",
+              }}>Teammitglied einladen</h2>
+              <p style={{fontSize:"0.88rem",color:"#6b7280",lineHeight:1.6,margin:"0 0 1.25rem"}}>
+                Gib die E-Mail-Adresse ein und wir senden einen Einladungslink.
+              </p>
+
+              {!onboardingInviteSent ? (<>
+                <div style={{marginBottom:"0.75rem"}}>
+                  <label htmlFor="onboarding-email" style={{fontSize:"0.72rem",fontWeight:700,color:"#6b7280",letterSpacing:"0.07em",display:"block",marginBottom:"0.4rem"}}>E-MAIL-ADRESSE</label>
+                  <input
+                    id="onboarding-email"
+                    type="email"
+                    autoComplete="email"
+                    value={onboardingEmail}
+                    onChange={e => setOnboardingEmail(e.target.value)}
+                    onKeyDown={async e => {
+                      if (e.key === "Enter" && onboardingEmail.trim() && !onboardingSending) {
+                        await handleOnboardingInvite();
+                      }
+                    }}
+                    placeholder="kollegin@beispiel.at"
+                    style={{
+                      width: "100%", padding: "0.8rem 1rem",
+                      border: "1.5px solid #e5e7eb",
+                      borderRadius: 10,
+                      background: "#f9fafb",
+                      color: "#1a1a1a",
+                      fontSize: "0.95rem",
+                      outline: "none",
+                      boxSizing: "border-box",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </div>
+
+                <button
+                  onClick={handleOnboardingInvite}
+                  disabled={!onboardingEmail.trim() || onboardingSending}
+                  style={{
+                    width: "100%",
+                    background: onboardingEmail.trim() ? "#e8500a" : "#d4cfca",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 10,
+                    padding: "0.85rem 1rem",
+                    fontSize: "0.95rem",
+                    fontWeight: 700,
+                    cursor: onboardingEmail.trim() && !onboardingSending ? "pointer" : "not-allowed",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.5rem",
+                    marginBottom: "0.65rem",
+                  }}
+                >
+                  {onboardingSending
+                    ? <><Loader2 size={15} strokeWidth={2} style={{animation:"spin 1s linear infinite"}}/>Wird gesendet…</>
+                    : <><Mail size={15} strokeWidth={2}/>Einladen</>
+                  }
+                </button>
+              </>) : (
+                <div style={{
+                  background: "#f0fdf4",
+                  border: "1.5px solid #86efac",
+                  borderRadius: 12,
+                  padding: "1rem",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "0.6rem",
+                  marginBottom: "0.75rem",
+                }}>
+                  <CheckCircle size={18} strokeWidth={2} style={{color:"#16a34a",flexShrink:0,marginTop:1}}/>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:"0.9rem",color:"#15803d",marginBottom:"0.2rem"}}>Einladung gesendet</div>
+                    <div style={{fontSize:"0.85rem",color:"#166534",wordBreak:"break-all"}}>{onboardingEmail}</div>
+                  </div>
+                </div>
+              )}
+
+              {onboardingInviteSent && (
+                <button
+                  onClick={() => { setOnboardingInviteSent(false); setOnboardingEmail(""); }}
+                  style={{
+                    width: "100%",
+                    background: "#fff3ee",
+                    color: "#e8500a",
+                    border: "1.5px solid #e8500a44",
+                    borderRadius: 10,
+                    padding: "0.8rem 1rem",
+                    fontSize: "0.93rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    marginBottom: "0.65rem",
+                  }}
+                >
+                  Weiteres Mitglied einladen
+                </button>
+              )}
+
+              <button
+                onClick={() => {
+                  if (user?.id) localStorage.setItem(`sm_onboarded_${user.id}`, "1");
+                  setShowOnboarding(false);
+                }}
+                style={{
+                  width: "100%",
+                  background: "transparent",
+                  color: "#6b7280",
+                  border: "1.5px solid #e5e7eb",
+                  borderRadius: 10,
+                  padding: "0.8rem 1rem",
+                  fontSize: "0.93rem",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                }}
+              >
+                {onboardingInviteSent ? "Fertig" : "Abbrechen"}
+              </button>
+            </>)}
+
+          </div>
+        </div>
+      )}
 
       {/* UPGRADE SHEET */}
       {showUpgrade && <Sheet onClose={()=>setShowUpgrade(null)} C={C}>
