@@ -80,7 +80,11 @@ export default function SponsorPage() {
           organizerEmail: data.oe,
           sponsorName: data.sn,
           eventName: data.en,
+          uid: data.uid,
+          eventId: data.ei,
+          sponsorId: data.si,
           logoUrls, videoUrls, fileUrls,
+          message,
         }),
       });
       setSubmitted(true);

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export async function POST(req: NextRequest) {
   const resend = new Resend(process.env.RESEND_API_KEY);
   try {
     const body = await req.json();
-    const { organizerEmail, sponsorName, eventName, logoUrls, videoUrls, fileUrls } = body;
+    const { organizerEmail, sponsorName, eventName, uid, eventId, sponsorId, logoUrls, videoUrls, fileUrls, message } = body;
 
     if (!organizerEmail || !sponsorName || !eventName) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
@@ -42,6 +43,22 @@ export async function POST(req: NextRequest) {
       subject: `Material vollständig: ${sponsorName} — ${eventName}`,
       html,
     });
+
+    // Save uploaded URLs to pipeline.sponsor_materials
+    if (sponsorId && eventId) {
+      const sponsorMaterials = {
+        logoUrls: logoUrls ?? [],
+        videoUrls: videoUrls ?? [],
+        fileUrls: fileUrls ?? [],
+        ...(message ? { message } : {}),
+        receivedAt: new Date().toISOString(),
+      };
+      await supabaseAdmin
+        .from("pipeline")
+        .update({ sponsor_materials: sponsorMaterials })
+        .eq("id", sponsorId)
+        .eq("event_id", eventId);
+    }
 
     return NextResponse.json({ ok: true });
   } catch (e) {

@@ -2888,77 +2888,6 @@ export default function SponsorMatch() {
                 )}
               </div>
 
-              {/* ABSCHNITT B — NACH DER VERANSTALTUNG */}
-              <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:14,padding:"1.1rem",marginBottom:"1.25rem"}}>
-                <div style={{display:"flex",alignItems:"center",gap:"0.5rem",marginBottom:"0.85rem"}}>
-                  <FileText size={14} strokeWidth={1.5} color={C.textMid}/>
-                  <div style={{fontSize:"0.88rem",fontWeight:800,color:C.text}}>Nach der Veranstaltung</div>
-                </div>
-                <div style={{marginBottom:"0.75rem"}}>
-                  <Label C={C}>DOKUMENTATION (WAS WURDE GELIEFERT?)</Label>
-                  <textarea
-                    rows={4}
-                    value={doc.report||""}
-                    onChange={e=>setDoc(d=>({...d,report:e.target.value}))}
-                    style={{...mkInp(C),resize:"none",fontSize:"0.85rem",lineHeight:1.5}}
-                    placeholder="z.B. Logo auf Hauptbühne prominent gezeigt, 2 VIP-Tickets übergeben, Social-Media-Post veröffentlicht..."
-                  />
-                </div>
-                <div style={{marginBottom:"1rem"}}>
-                  <Label C={C}>REICHWEITE / ZAHLEN</Label>
-                  <input
-                    type="text"
-                    value={doc.reach||""}
-                    onChange={e=>setDoc(d=>({...d,reach:e.target.value}))}
-                    style={mkInp(C)}
-                    placeholder="z.B. 450 Gäste, 12.000 Social Impressions, 3 Artikel"
-                  />
-                </div>
-                {/* Photo Upload */}
-                <div style={{marginBottom:"1rem"}}>
-                  <div style={{fontSize:"0.72rem",fontWeight:700,color:C.textMid,letterSpacing:"0.06em",marginBottom:"0.5rem"}}>FOTOS VON WERBEFLÄCHEN DER VERANSTALTUNG</div>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(90px, 1fr))",gap:"0.4rem"}}>
-                    {(doc.photos||[]).map((url,i)=>(
-                      <div key={i} style={{position:"relative",borderRadius:8,overflow:"hidden",aspectRatio:"1",background:C.bg}}>
-                        <img src={url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                        <button type="button" onClick={()=>setDoc(d=>({...d,photos:(d.photos||[]).filter((_,j)=>j!==i)}))}
-                          style={{position:"absolute",top:3,right:3,background:"rgba(0,0,0,0.55)",color:"#fff",border:"none",borderRadius:"50%",width:20,height:20,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1,fontSize:"0.75rem",padding:0}}>×</button>
-                      </div>
-                    ))}
-                    <button type="button" onClick={()=>agreementPhotoInputRef.current?.click()}
-                      style={{borderRadius:8,border:`1.5px dashed ${C.border}`,background:C.bg,aspectRatio:"1",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:"0.25rem",color:C.textMid,fontSize:"0.68rem",fontWeight:600}}>
-                      <Plus size={14} strokeWidth={1.5}/>Foto
-                    </button>
-                  </div>
-                  <input ref={agreementPhotoInputRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={async e=>{
-                    const files = Array.from(e.target.files||[]);
-                    if(!files.length) return;
-                    notify("Fotos werden hochgeladen…");
-                    try {
-                      const urls = await Promise.all(files.map(f=>uploadAgreementPhoto(user.id, proj.id, editSponsor.id, f)));
-                      setDoc(d=>({...d,photos:[...(d.photos||[]),...urls]}));
-                      notify(`${urls.length} Foto${urls.length!==1?"s":""} gespeichert`);
-                    } catch(err) { console.error(err); notify("Fehler beim Hochladen"); }
-                    e.target.value="";
-                  }}/>
-                </div>
-
-                {doc.sentToSponsor && (
-                  <div style={{display:"flex",alignItems:"center",gap:"0.5rem",background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:9,padding:"0.6rem 0.8rem",marginBottom:"0.75rem",fontSize:"0.82rem",color:"#2563eb",fontWeight:600}}>
-                    <Mail size={13} strokeWidth={1.5}/>
-                    Gesendet am {doc.sentDate ? new Date(doc.sentDate+"T12:00:00").toLocaleDateString("de-AT",{day:"2-digit",month:"2-digit",year:"numeric"}) : "—"}
-                  </div>
-                )}
-                <button
-                  onClick={sendPostEventEmail}
-                  disabled={!editSponsor.email}
-                  style={{width:"100%",background:editSponsor.email?C.surface:"#f1f0ee",color:editSponsor.email?C.accent:C.textLight,border:`1.5px solid ${editSponsor.email?C.accentBorder:C.border}`,borderRadius:10,padding:"0.8rem",fontSize:"0.85rem",fontWeight:700,cursor:editSponsor.email?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",gap:"0.4rem"}}
-                >
-                  <Mail size={14} strokeWidth={1.5}/>Per E-Mail an Sponsor senden
-                </button>
-                {!editSponsor.email && <div style={{fontSize:"0.72rem",color:C.textLight,marginTop:"0.35rem",textAlign:"center"}}>Keine E-Mail-Adresse hinterlegt</div>}
-              </div>
-
               {/* SPONSOR-LINK */}
               {(() => {
                 const pkg = proj.packages.find(pk=>pk.name===editSponsor.package);
@@ -3089,6 +3018,77 @@ export default function SponsorMatch() {
                   </div>
                 );
               })()}
+
+              {/* ABSCHNITT B — NACH DER VERANSTALTUNG */}
+              <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:14,padding:"1.1rem",marginBottom:"1.25rem"}}>
+                <div style={{display:"flex",alignItems:"center",gap:"0.5rem",marginBottom:"0.85rem"}}>
+                  <FileText size={14} strokeWidth={1.5} color={C.textMid}/>
+                  <div style={{fontSize:"0.88rem",fontWeight:800,color:C.text}}>Nach der Veranstaltung</div>
+                </div>
+                <div style={{marginBottom:"0.75rem"}}>
+                  <Label C={C}>DOKUMENTATION (WAS WURDE GELIEFERT?)</Label>
+                  <textarea
+                    rows={4}
+                    value={doc.report||""}
+                    onChange={e=>setDoc(d=>({...d,report:e.target.value}))}
+                    style={{...mkInp(C),resize:"none",fontSize:"0.85rem",lineHeight:1.5}}
+                    placeholder="z.B. Logo auf Hauptbühne prominent gezeigt, 2 VIP-Tickets übergeben, Social-Media-Post veröffentlicht..."
+                  />
+                </div>
+                <div style={{marginBottom:"1rem"}}>
+                  <Label C={C}>REICHWEITE / ZAHLEN</Label>
+                  <input
+                    type="text"
+                    value={doc.reach||""}
+                    onChange={e=>setDoc(d=>({...d,reach:e.target.value}))}
+                    style={mkInp(C)}
+                    placeholder="z.B. 450 Gäste, 12.000 Social Impressions, 3 Artikel"
+                  />
+                </div>
+                {/* Photo Upload */}
+                <div style={{marginBottom:"1rem"}}>
+                  <div style={{fontSize:"0.72rem",fontWeight:700,color:C.textMid,letterSpacing:"0.06em",marginBottom:"0.5rem"}}>FOTOS VON WERBEFLÄCHEN DER VERANSTALTUNG</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(90px, 1fr))",gap:"0.4rem"}}>
+                    {(doc.photos||[]).map((url,i)=>(
+                      <div key={i} style={{position:"relative",borderRadius:8,overflow:"hidden",aspectRatio:"1",background:C.bg}}>
+                        <img src={url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                        <button type="button" onClick={()=>setDoc(d=>({...d,photos:(d.photos||[]).filter((_,j)=>j!==i)}))}
+                          style={{position:"absolute",top:3,right:3,background:"rgba(0,0,0,0.55)",color:"#fff",border:"none",borderRadius:"50%",width:20,height:20,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1,fontSize:"0.75rem",padding:0}}>×</button>
+                      </div>
+                    ))}
+                    <button type="button" onClick={()=>agreementPhotoInputRef.current?.click()}
+                      style={{borderRadius:8,border:`1.5px dashed ${C.border}`,background:C.bg,aspectRatio:"1",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:"0.25rem",color:C.textMid,fontSize:"0.68rem",fontWeight:600}}>
+                      <Plus size={14} strokeWidth={1.5}/>Foto
+                    </button>
+                  </div>
+                  <input ref={agreementPhotoInputRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={async e=>{
+                    const files = Array.from(e.target.files||[]);
+                    if(!files.length) return;
+                    notify("Fotos werden hochgeladen…");
+                    try {
+                      const urls = await Promise.all(files.map(f=>uploadAgreementPhoto(user.id, proj.id, editSponsor.id, f)));
+                      setDoc(d=>({...d,photos:[...(d.photos||[]),...urls]}));
+                      notify(`${urls.length} Foto${urls.length!==1?"s":""} gespeichert`);
+                    } catch(err) { console.error(err); notify("Fehler beim Hochladen"); }
+                    e.target.value="";
+                  }}/>
+                </div>
+
+                {doc.sentToSponsor && (
+                  <div style={{display:"flex",alignItems:"center",gap:"0.5rem",background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:9,padding:"0.6rem 0.8rem",marginBottom:"0.75rem",fontSize:"0.82rem",color:"#2563eb",fontWeight:600}}>
+                    <Mail size={13} strokeWidth={1.5}/>
+                    Gesendet am {doc.sentDate ? new Date(doc.sentDate+"T12:00:00").toLocaleDateString("de-AT",{day:"2-digit",month:"2-digit",year:"numeric"}) : "—"}
+                  </div>
+                )}
+                <button
+                  onClick={sendPostEventEmail}
+                  disabled={!editSponsor.email}
+                  style={{width:"100%",background:editSponsor.email?C.surface:"#f1f0ee",color:editSponsor.email?C.accent:C.textLight,border:`1.5px solid ${editSponsor.email?C.accentBorder:C.border}`,borderRadius:10,padding:"0.8rem",fontSize:"0.85rem",fontWeight:700,cursor:editSponsor.email?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",gap:"0.4rem"}}
+                >
+                  <Mail size={14} strokeWidth={1.5}/>Per E-Mail an Sponsor senden
+                </button>
+                {!editSponsor.email && <div style={{fontSize:"0.72rem",color:C.textLight,marginTop:"0.35rem",textAlign:"center"}}>Keine E-Mail-Adresse hinterlegt</div>}
+              </div>
 
               <button onClick={saveEditSponsor} style={{width:"100%",background:C.accent,color:"#fff",border:"none",borderRadius:12,padding:"0.9rem",fontWeight:700,cursor:"pointer"}}>Speichern & Schließen</button>
             </>
