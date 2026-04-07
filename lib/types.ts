@@ -118,8 +118,10 @@ export interface Call {
   pipeline_id: string;
   date: string;
   time: string | null;
+  duration: string | null;
   result: CallResult | null;
   notes: string | null;
+  done: boolean;
   created_at: string;
 }
 
@@ -134,6 +136,7 @@ export interface Appointment {
   time: string | null;
   location: string | null;
   notes: string | null;
+  done: boolean;
   created_at: string;
 }
 

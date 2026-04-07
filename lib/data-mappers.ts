@@ -232,8 +232,10 @@ export function mapCallToInsert(call: any, pipelineId: string): CallInsert {
     pipeline_id: pipelineId,
     date: call.date ?? new Date().toISOString().slice(0, 10),
     time: call.time ?? null,
+    duration: call.duration ?? null,
     result: call.result ?? null,
     notes: call.notes ?? null,
+    done: call.done ?? false,
   };
 }
 
@@ -247,5 +249,6 @@ export function mapAppointmentToInsert(apt: any, pipelineId: string): Appointmen
     title: apt.title ?? null,
     location: apt.location ?? null,
     notes: apt.notes ?? null,
+    done: apt.done ?? false,
   };
 }

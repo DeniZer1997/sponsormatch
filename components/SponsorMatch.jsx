@@ -927,15 +927,14 @@ export default function SponsorMatch() {
     saveContacts(updated);
     setConfirmDeleteContact(null);
     setEditContact(null);
-    deleteContactDb(c.id); // Fire-and-forget
-    notify("Kontakt gelöscht");
+    deleteContactDb(c.id).catch(() => notify("Fehler beim Löschen des Kontakts"));
   };
 
   const deleteSponsor = (id) => {
     updProj(p => ({ ...p, pipeline: p.pipeline.filter(s => s.id !== id) }));
     setConfirmDeleteSponsor(null);
     if (selected?.id === id) setSelected(null);
-    deletePipelineEntry(id); // Fire-and-forget
+    deletePipelineEntry(id).catch(() => notify("Fehler beim Löschen des Sponsors"));
     notify("Sponsor gelöscht");
   };
 

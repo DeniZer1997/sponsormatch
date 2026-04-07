@@ -211,8 +211,10 @@ async function migratePipelineEntry(eventId: string, entry: any): Promise<void> 
         pipeline_id: pipelineId,
         date: call.date ?? '',
         time: call.time ?? null,
+        duration: call.duration ?? null,
         result: validResults.includes(call.result) ? call.result : null,
         notes: call.notes ?? null,
+        done: call.done ?? false,
       };
       await upsertCall(callInsert);
     }
@@ -228,6 +230,7 @@ async function migratePipelineEntry(eventId: string, entry: any): Promise<void> 
         time: appt.time ?? null,
         location: appt.location ?? null,
         notes: appt.notes ?? null,
+        done: appt.done ?? false,
       };
       await upsertAppointment(apptInsert);
     }
