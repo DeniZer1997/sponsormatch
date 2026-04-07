@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     `;
 
     await resend.emails.send({
-      from: "SponsorMatch <noreply@sponsormatch-iota.vercel.app>",
+      from: "SponsorMatch <onboarding@resend.dev>",
       to: organizerEmail,
       subject: `Material vollständig: ${sponsorName} — ${eventName}`,
       html,

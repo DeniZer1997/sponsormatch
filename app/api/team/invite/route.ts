@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
 
   const resend = new Resend(process.env.RESEND_API_KEY);
   await resend.emails.send({
-    from: "SponsorMatch <noreply@sponsormatch-iota.vercel.app>",
+    from: "SponsorMatch <onboarding@resend.dev>",
     to: email.trim(),
     subject: `${inviterName} lädt dich zu ${org?.name} ein`,
     html,

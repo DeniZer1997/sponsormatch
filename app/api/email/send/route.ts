@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
   try {
     const { data, error } = await resend.emails.send({
-      from: 'SponsorMatch <noreply@sponsormatch-iota.vercel.app>',
+      from: 'SponsorMatch <onboarding@resend.dev>',
       to,
       subject,
       html,
