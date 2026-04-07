@@ -98,12 +98,17 @@ export async function POST(req: NextRequest) {
   `;
 
   const resend = new Resend(process.env.RESEND_API_KEY);
-  await resend.emails.send({
+  const { error: emailError } = await resend.emails.send({
     from: "SponsorMatch <onboarding@resend.dev>",
     to: email.trim(),
     subject: `${inviterName} lädt dich zu ${org?.name} ein`,
     html,
   });
+
+  if (emailError) {
+    console.error("Resend error:", emailError);
+    return NextResponse.json({ error: `E-Mail konnte nicht gesendet werden: ${emailError.message}` }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }
