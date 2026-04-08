@@ -1064,11 +1064,20 @@ export default function SponsorMatch() {
     notify("Sponsor hinzugefügt");
   };
 
-  const saveEditSponsor = () => {
+  const saveEditSponsor = async () => {
     const updated = {...editSponsor};
     updProj(p=>({...p,pipeline:p.pipeline.map(s=>s.id===updated.id?updated:s)}));
     setEditSponsor(null); setEditSponsorTab("details"); setShowAddCall(false); setShowAddApt(false);
     setSelected(updated); notify("Sponsor aktualisiert");
+    try {
+      const savedEntry = await upsertPipelineEntry(mapPipelineToInsert(updated, proj.id));
+      if (Array.isArray(updated.calls)) {
+        await Promise.all(updated.calls.map(c => upsertCall(mapCallToInsert(c, savedEntry.id))));
+      }
+      if (Array.isArray(updated.appointments)) {
+        await Promise.all(updated.appointments.map(a => upsertAppointment(mapAppointmentToInsert(a, savedEntry.id))));
+      }
+    } catch(e) { console.error("Pipeline-Speicher-Fehler:", e); }
   };
 
   const sendPitch = (sponsor, text) => {
@@ -2352,7 +2361,7 @@ export default function SponsorMatch() {
 
         {/* TABS */}
         <div style={{display:"flex",gap:"0.35rem",marginBottom:"1.25rem",background:C.bg,borderRadius:10,padding:"0.25rem",border:`1px solid ${C.border}`,overflowX:"auto",scrollbarWidth:"none"}}>
-          {[["details","Details"],["calls","Telefonate"],["appointments","Termine"],...((editSponsor.status==="negotiating"||editSponsor.status==="confirmed") && hasFeature(user?.tier||'free','agreements')?[["vereinbarung","Vereinbarung"]]:[])]
+          {[["details","Details"],["calls","Telefonate"],["appointments","Termine"],...(hasFeature(user?.tier||'free','agreements')?[["vereinbarung","Vereinbarung"]]:[])]
             .map(([id,label])=>(
             <button key={id} onClick={()=>{ setEditSponsorTab(id); setShowAddCall(false); setShowAddApt(false); }}
               style={{flex:1,padding:"0.5rem 0.3rem",borderRadius:8,border:"none",cursor:"pointer",fontSize:"0.72rem",fontWeight:700,
@@ -2364,7 +2373,7 @@ export default function SponsorMatch() {
               {id==="appointments"&&(editSponsor.appointments||[]).filter(a=>!a.done).length>0?` (${(editSponsor.appointments||[]).filter(a=>!a.done).length})`:""}
             </button>
           ))}
-          {(editSponsor.status==="negotiating"||editSponsor.status==="confirmed") && !hasFeature(user?.tier||'free','agreements') && (
+          {!hasFeature(user?.tier||'free','agreements') && (
             <button onClick={()=>setShowUpgrade({feature:'agreements',label:'Sponsorenvereinbarung',requiredTier:'max'})}
               style={{fontSize:"0.78rem",color:C.accent,background:C.accentSoft,border:`1px solid ${C.accentBorder}`,borderRadius:8,padding:"0.35rem 0.75rem",cursor:"pointer",fontWeight:600,display:"flex",alignItems:"center",gap:"0.35rem",flexShrink:0}}>
               <Zap size={11} strokeWidth={1.5}/>Vereinbarung (Max)

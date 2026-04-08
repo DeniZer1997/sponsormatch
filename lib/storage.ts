@@ -18,6 +18,21 @@ function ext(file: File): string {
   return extension;
 }
 
+const MIME_MAP: Record<string, string> = {
+  mp4: 'video/mp4', mov: 'video/quicktime', avi: 'video/x-msvideo',
+  webm: 'video/webm', mkv: 'video/x-matroska', wmv: 'video/x-ms-wmv',
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
+  svg: 'image/svg+xml', gif: 'image/gif', webp: 'image/webp',
+  pdf: 'application/pdf', zip: 'application/zip',
+  ai: 'application/postscript', eps: 'application/postscript',
+};
+
+function resolveMime(file: File): string {
+  if (file.type && file.type !== 'application/octet-stream') return file.type;
+  const fileExt = file.name.split('.').pop()?.toLowerCase() ?? '';
+  return MIME_MAP[fileExt] ?? 'application/octet-stream';
+}
+
 export function getPublicUrl(path: string): string {
   const { data } = supabase().storage.from(BUCKET).getPublicUrl(path);
   return data.publicUrl;
@@ -85,7 +100,7 @@ export async function uploadSponsorMaterial(
   const path = `${userId}/${eventId}/materials/${sponsorId}/${type}/${filename}`;
   const { error } = await supabase().storage
     .from(BUCKET)
-    .upload(path, file, { upsert: false });
+    .upload(path, file, { contentType: resolveMime(file), upsert: true });
   if (error) throw error;
   return getPublicUrl(path);
 }
