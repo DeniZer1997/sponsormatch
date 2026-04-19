@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { Zap, BarChart2, Package, Bot, Eye, Pencil, Mail, Check, Camera, Building2, Calendar, MapPin, Users, CheckCircle, FileText, Handshake, Inbox, Settings, Globe, ImageIcon, Target, AlertCircle, User, Plus, BookUser, Phone, Search, Trash2, History, Copy, ChevronDown, ChevronUp, PhoneCall, CalendarDays, Download, Loader2, Upload, Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { TIER_CONFIG, hasFeature, canCreateEvent, canCreatePackage, canAddPipelineContact } from "@/lib/tier-config";
-import { loadAllUserData, getUserOrgId, getUserProfile, upsertEvent, deleteEvent, replacePackages, replaceMehrwert, upsertPipelineEntry, upsertCall, upsertAppointment, upsertContact, deletePipelineEntry, deleteContact as deleteContactDb, getNotifications, markNotificationsRead } from "@/lib/db";
+import { loadAllUserData, getUserOrgId, getUserProfile, upsertEvent, deleteEvent, replacePackages, replaceMehrwert, upsertPipelineEntry, upsertCall, upsertAppointment, upsertContact, deletePipelineEntry, deleteContact as deleteContactDb, getNotifications, markNotificationsRead, getPipelineEntry } from "@/lib/db";
 import { assembleProjects, assembleContacts, mapProjectToEventInsert, mapPackageToInsert, mapMehrwertToInsert, mapPipelineToInsert, mapCallToInsert, mapAppointmentToInsert, mapContactToInsert } from "@/lib/data-mappers";
 import { migrateLocalStorageToSupabase } from "@/lib/migrate-to-supabase";
 import { uploadEventBanner, uploadGalleryImage, uploadAgreementPdf, uploadAgreementPhoto, uploadSponsorMaterial } from "@/lib/storage";
@@ -3406,12 +3406,21 @@ export default function SponsorMatch() {
                   ? <div style={{padding:"1.5rem",textAlign:"center",color:C.textLight,fontSize:"0.82rem"}}>Keine Benachrichtigungen</div>
                   : <div style={{maxHeight:360,overflowY:"auto"}}>
                       {notifications.map(n=>(
-                        <div key={n.id} onClick={()=>{
+                        <div key={n.id} onClick={async()=>{
                           setShowNotifications(false);
-                          // Seite neu laden um aktuelle Sponsor-Materialien zu sehen
-                          if(n.data?.sponsorId){
-                            initUserData(user.id);
-                            notify("Daten werden aktualisiert…");
+                          if(n.data?.sponsorId && n.data?.eventId){
+                            // Zum richtigen Event + Pipeline navigieren
+                            setActiveId(n.data.eventId);
+                            setPage("pipeline");
+                            // Aktuellen Eintrag aus lokalem State finden (hat calls/appointments)
+                            const proj = projects.find(p=>p.id===n.data.eventId);
+                            const localEntry = proj?.pipeline?.find(e=>e.id===n.data.sponsorId);
+                            if(localEntry){ setEditSponsor({...localEntry}); setEditSponsorTab("vereinbarung"); }
+                            // Frische Sponsor-Materialien aus Supabase nachladen
+                            try {
+                              const fresh = await getPipelineEntry(n.data.sponsorId);
+                              if(fresh) setEditSponsor(prev => prev ? {...prev, sponsorMaterials: fresh.sponsor_materials} : prev);
+                            } catch(e){ /* ignore */ }
                           }
                         }} style={{padding:"0.85rem 1rem",borderBottom:`1px solid ${C.border}`,cursor:n.data?.sponsorId?"pointer":"default",background:n.read?"transparent":"#fffbf0",transition:"background 0.15s"}}
                           onMouseEnter={e=>{if(n.data?.sponsorId)e.currentTarget.style.background=C.bg;}}

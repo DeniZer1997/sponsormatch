@@ -197,6 +197,15 @@ export async function upsertPipelineEntry(entry: PipelineInsert): Promise<Pipeli
   return data;
 }
 
+export async function getPipelineEntry(entryId: string): Promise<PipelineEntry | null> {
+  const { data } = await supabase()
+    .from('pipeline')
+    .select('*')
+    .eq('id', entryId)
+    .single();
+  return data ?? null;
+}
+
 export async function deletePipelineEntry(entryId: string): Promise<void> {
   const { error } = await supabase()
     .from('pipeline')
