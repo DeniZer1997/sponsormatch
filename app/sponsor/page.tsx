@@ -116,21 +116,65 @@ export default function SponsorPage() {
 
   if (submitted) return (
     <div style={{ fontFamily: "'Helvetica Neue', sans-serif", background: "#f8f7f4", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem" }}>
-      <div style={{ textAlign: "center", maxWidth: 440 }}>
-        <div style={{ width: 72, height: 72, borderRadius: "50%", background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
-          <Check size={32} strokeWidth={2} color="#16a34a" />
+      <div style={{ textAlign: "center", maxWidth: 460, width: "100%" }}>
+
+        {/* Check Icon */}
+        <div style={{ width: 80, height: 80, borderRadius: "50%", background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.75rem", boxShadow: "0 0 0 8px #f0fdf4" }}>
+          <Check size={36} strokeWidth={2.5} color="#16a34a" />
         </div>
-        <h1 style={{ fontSize: "1.6rem", fontWeight: 800, marginBottom: "0.5rem", fontFamily: "Georgia, serif" }}>Vielen Dank!</h1>
-        <p style={{ color: "#6b6560", fontSize: "0.95rem", lineHeight: 1.6 }}>
-          Deine Materialien für <strong>{data.en}</strong> wurden erfolgreich übermittelt.
-          Der Veranstalter wird benachrichtigt.
+
+        {/* Titel mit Sponsorname */}
+        <h1 style={{ fontSize: "clamp(1.5rem, 5vw, 1.9rem)", fontWeight: 800, fontFamily: "Georgia, serif", margin: "0 0 0.5rem", letterSpacing: "-0.02em", color: "#1a1814" }}>
+          Vielen Dank, {data.sn}!
+        </h1>
+        <p style={{ color: "#6b7280", fontSize: "0.9rem", lineHeight: 1.6, margin: "0 0 1.75rem" }}>
+          Deine Materialien wurden erfolgreich übermittelt.
         </p>
-        <div style={{ marginTop: "1.5rem", background: "#fff", border: "1px solid #e8e4dd", borderRadius: 12, padding: "1rem 1.25rem", textAlign: "left", fontSize: "0.85rem", color: "#6b6560" }}>
-          <div style={{ fontWeight: 700, color: "#1a1814", marginBottom: "0.4rem" }}>Übermittelt:</div>
-          {logoUrls.length > 0 && <div>✓ {logoUrls.length} Logo{logoUrls.length !== 1 ? "s" : ""}</div>}
-          {videoUrls.length > 0 && <div>✓ {videoUrls.length} Video{videoUrls.length !== 1 ? "s" : ""}</div>}
-          {fileUrls.length > 0 && <div>✓ {fileUrls.length} weitere Datei{fileUrls.length !== 1 ? "en" : ""}</div>}
+
+        {/* Veranstaltung + Paket */}
+        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "1rem 1.25rem", marginBottom: "1rem", textAlign: "left" }}>
+          <div style={{ fontSize: "0.7rem", fontWeight: 700, color: ACCENT, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "0.6rem" }}>Veranstaltung</div>
+          <div style={{ fontSize: "1rem", fontWeight: 700, color: "#1a1814", marginBottom: data.pk ? "0.35rem" : 0 }}>{data.en}</div>
+          {data.pk && (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", background: "#f0fdfe", border: "1px solid #a5f3f7", borderRadius: 6, padding: "0.2rem 0.6rem", fontSize: "0.8rem", fontWeight: 600, color: ACCENT }}>
+              Paket: {data.pk}
+            </div>
+          )}
         </div>
+
+        {/* Übermittelte Dateien */}
+        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "1rem 1.25rem", marginBottom: "1.75rem", textAlign: "left" }}>
+          <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#6b7280", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "0.75rem" }}>Übermittelte Dateien</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
+            {logoUrls.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.55rem 0.75rem", background: "#f9fafb", borderRadius: 8 }}>
+                <ImageIcon size={15} strokeWidth={1.5} color={ACCENT} style={{ flexShrink: 0 }} />
+                <span style={{ flex: 1, fontSize: "0.88rem", fontWeight: 500, color: "#1a1814" }}>Logo{logoUrls.length !== 1 ? "s" : ""}</span>
+                <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#fff", background: "#16a34a", borderRadius: 20, padding: "0.1rem 0.55rem" }}>{logoUrls.length}</span>
+              </div>
+            )}
+            {videoUrls.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.55rem 0.75rem", background: "#f9fafb", borderRadius: 8 }}>
+                <Film size={15} strokeWidth={1.5} color={ACCENT} style={{ flexShrink: 0 }} />
+                <span style={{ flex: 1, fontSize: "0.88rem", fontWeight: 500, color: "#1a1814" }}>Video{videoUrls.length !== 1 ? "s" : ""}</span>
+                <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#fff", background: "#16a34a", borderRadius: 20, padding: "0.1rem 0.55rem" }}>{videoUrls.length}</span>
+              </div>
+            )}
+            {fileUrls.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.55rem 0.75rem", background: "#f9fafb", borderRadius: 8 }}>
+                <FileText size={15} strokeWidth={1.5} color="#6b7280" style={{ flexShrink: 0 }} />
+                <span style={{ flex: 1, fontSize: "0.88rem", fontWeight: 500, color: "#1a1814" }}>Weitere Datei{fileUrls.length !== 1 ? "en" : ""}</span>
+                <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#fff", background: "#16a34a", borderRadius: 20, padding: "0.1rem 0.55rem" }}>{fileUrls.length}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Abschluss-Hinweis */}
+        <p style={{ fontSize: "0.82rem", color: "#9ca3af", lineHeight: 1.6, margin: 0 }}>
+          <strong style={{ color: "#6b7280" }}>{data.on || "Der Veranstalter"}</strong> wurde benachrichtigt und wird sich bei Fragen melden.
+        </p>
+
       </div>
     </div>
   );
