@@ -888,7 +888,8 @@ export default function SponsorMatch() {
           catch(e) { /* ignore */ }
         }
       } catch (err) {
-        console.warn('Supabase dual-write (projects) failed:', err);
+        console.error('Supabase dual-write (projects) failed:', err);
+        notify(`DB-Fehler: ${err?.message || err}`);
       }
     })();
   };
@@ -1077,7 +1078,7 @@ export default function SponsorMatch() {
       if (Array.isArray(updated.appointments)) {
         await Promise.all(updated.appointments.map(a => upsertAppointment(mapAppointmentToInsert(a, savedEntry.id))));
       }
-    } catch(e) { console.error("Pipeline-Speicher-Fehler:", e); }
+    } catch(e) { console.error("Pipeline-Speicher-Fehler:", e); notify(`Pipeline-Fehler: ${e?.message || e}`); }
   };
 
   const sendPitch = (sponsor, text) => {
