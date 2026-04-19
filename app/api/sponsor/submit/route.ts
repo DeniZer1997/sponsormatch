@@ -44,8 +44,8 @@ export async function POST(req: NextRequest) {
       html,
     });
 
-    // Save uploaded URLs to pipeline.sponsor_materials
-    if (sponsorId && eventId) {
+    // Save uploaded URLs to pipeline.sponsor_materials + create in-app notification
+    if (sponsorId && eventId && uid) {
       const sponsorMaterials = {
         logoUrls: logoUrls ?? [],
         videoUrls: videoUrls ?? [],
@@ -53,11 +53,22 @@ export async function POST(req: NextRequest) {
         ...(message ? { message } : {}),
         receivedAt: new Date().toISOString(),
       };
-      await supabaseAdmin
-        .from("pipeline")
-        .update({ sponsor_materials: sponsorMaterials })
-        .eq("id", sponsorId)
-        .eq("event_id", eventId);
+      await Promise.all([
+        supabaseAdmin
+          .from("pipeline")
+          .update({ sponsor_materials: sponsorMaterials })
+          .eq("id", sponsorId)
+          .eq("event_id", eventId),
+        supabaseAdmin
+          .from("notifications")
+          .insert({
+            user_id: uid,
+            type: "sponsor_upload",
+            title: "Sponsor-Material eingegangen",
+            body: `${sponsorName} hat ${total} Datei${total !== 1 ? "en" : ""} für ${eventName} hochgeladen.${message ? ` Nachricht: "${message}"` : ""}`,
+            data: { sponsorId, eventId, sponsorName, eventName, logoUrls, videoUrls, fileUrls },
+          }),
+      ]);
     }
 
     return NextResponse.json({ ok: true });

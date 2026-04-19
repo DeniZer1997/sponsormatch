@@ -1,10 +1,10 @@
 "use client";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Zap, BarChart2, Package, Bot, Eye, Pencil, Mail, Check, Camera, Building2, Calendar, MapPin, Users, CheckCircle, FileText, Handshake, Inbox, Settings, Globe, ImageIcon, Target, AlertCircle, User, Plus, BookUser, Phone, Search, Trash2, History, Copy, ChevronDown, ChevronUp, PhoneCall, CalendarDays, Download, Loader2, Upload } from "lucide-react";
+import { Zap, BarChart2, Package, Bot, Eye, Pencil, Mail, Check, Camera, Building2, Calendar, MapPin, Users, CheckCircle, FileText, Handshake, Inbox, Settings, Globe, ImageIcon, Target, AlertCircle, User, Plus, BookUser, Phone, Search, Trash2, History, Copy, ChevronDown, ChevronUp, PhoneCall, CalendarDays, Download, Loader2, Upload, Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase";
 import { TIER_CONFIG, hasFeature, canCreateEvent, canCreatePackage, canAddPipelineContact } from "@/lib/tier-config";
-import { loadAllUserData, getUserOrgId, getUserProfile, upsertEvent, deleteEvent, replacePackages, replaceMehrwert, upsertPipelineEntry, upsertCall, upsertAppointment, upsertContact, deletePipelineEntry, deleteContact as deleteContactDb } from "@/lib/db";
+import { loadAllUserData, getUserOrgId, getUserProfile, upsertEvent, deleteEvent, replacePackages, replaceMehrwert, upsertPipelineEntry, upsertCall, upsertAppointment, upsertContact, deletePipelineEntry, deleteContact as deleteContactDb, getNotifications, markNotificationsRead } from "@/lib/db";
 import { assembleProjects, assembleContacts, mapProjectToEventInsert, mapPackageToInsert, mapMehrwertToInsert, mapPipelineToInsert, mapCallToInsert, mapAppointmentToInsert, mapContactToInsert } from "@/lib/data-mappers";
 import { migrateLocalStorageToSupabase } from "@/lib/migrate-to-supabase";
 import { uploadEventBanner, uploadGalleryImage, uploadAgreementPdf, uploadAgreementPhoto, uploadSponsorMaterial } from "@/lib/storage";
@@ -546,6 +546,8 @@ export default function SponsorMatch() {
   const [activeId, setActiveId] = useState(null);
   const [page, setPage] = useState("dashboard");
   const [notif, setNotif] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [dashFilter, setDashFilter] = useState(null); // null | "confirmed" | "pipeline" | "active" | "conversion"
   const [confirmDeleteSponsor, setConfirmDeleteSponsor] = useState(null); // sponsor id oder null
   const [sendingEmail, setSendingEmail] = useState(false);
@@ -710,6 +712,12 @@ export default function SponsorMatch() {
       console.warn('getUserProfile failed, defaulting to admin:', e);
       setUser(prev => prev ? { ...prev, role: 'admin' } : prev);
     }
+
+    // Notifications laden
+    try {
+      const notifs = await getNotifications(uid);
+      setNotifications(notifs);
+    } catch (e) { /* Tabelle existiert evtl. noch nicht */ }
 
     // Onboarding-Fallback für E-Mail-Bestätigungs-Flow (wenn via /auth/callback eingeloggt)
     const onboardedKey = `sm_onboarded_${uid}`;
@@ -3366,11 +3374,66 @@ export default function SponsorMatch() {
             }}>
             {(user?.tier||'free')==='free' ? 'FREE ↑' : (user?.tier||'free').toUpperCase()}
           </span>
-          <button onClick={()=>setShowProjects(true)} style={{display:"flex",alignItems:"center",gap:"0.4rem",background:C.bg,border:`1px solid ${C.border}`,borderRadius:99,padding:"0.4rem 1rem",cursor:"pointer",flexGrow:1,maxWidth:"calc(100% - 120px)",transition:"border-color 0.15s"}}
+          <button onClick={()=>setShowProjects(true)} style={{display:"flex",alignItems:"center",gap:"0.4rem",background:C.bg,border:`1px solid ${C.border}`,borderRadius:99,padding:"0.4rem 1rem",cursor:"pointer",flexGrow:1,maxWidth:"calc(100% - 160px)",transition:"border-color 0.15s"}}
             onMouseEnter={e=>e.currentTarget.style.borderColor=C.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
             <span style={{fontSize:"0.82rem",fontWeight:600,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{proj.name}</span>
             <span style={{fontSize:"0.75rem",color:C.textLight,flexShrink:0}}>▾</span>
           </button>
+          {/* NOTIFICATION BELL */}
+          <div style={{position:"relative",flexShrink:0}}>
+            <button onClick={async()=>{
+              setShowNotifications(v=>!v);
+              const unread = notifications.filter(n=>!n.read).map(n=>n.id);
+              if(unread.length>0){
+                setNotifications(prev=>prev.map(n=>({...n,read:true})));
+                markNotificationsRead(unread).catch(()=>{});
+              }
+            }} style={{width:36,height:36,borderRadius:9,border:`1px solid ${notifications.some(n=>!n.read)?C.accent:C.border}`,background:notifications.some(n=>!n.read)?C.accentSoft:C.bg,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",position:"relative",transition:"all 0.15s"}}>
+              <Bell size={16} strokeWidth={1.5} color={notifications.some(n=>!n.read)?C.accent:C.textMid}/>
+              {notifications.filter(n=>!n.read).length>0&&(
+                <div style={{position:"absolute",top:-4,right:-4,width:16,height:16,borderRadius:"50%",background:C.accent,color:"#fff",fontSize:"0.58rem",fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",border:`2px solid ${C.surface}`}}>
+                  {notifications.filter(n=>!n.read).length}
+                </div>
+              )}
+            </button>
+            {showNotifications&&(
+              <div style={{position:"absolute",right:0,top:"calc(100% + 8px)",width:320,background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,boxShadow:"0 8px 32px rgba(0,0,0,0.12)",zIndex:200,overflow:"hidden"}}>
+                <div style={{padding:"0.85rem 1rem",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <span style={{fontSize:"0.82rem",fontWeight:800,color:C.text}}>Benachrichtigungen</span>
+                  <button onClick={()=>setShowNotifications(false)} style={{background:"none",border:"none",cursor:"pointer",color:C.textMid,fontSize:"1rem",lineHeight:1,padding:0}}>×</button>
+                </div>
+                {notifications.length===0
+                  ? <div style={{padding:"1.5rem",textAlign:"center",color:C.textLight,fontSize:"0.82rem"}}>Keine Benachrichtigungen</div>
+                  : <div style={{maxHeight:360,overflowY:"auto"}}>
+                      {notifications.map(n=>(
+                        <div key={n.id} onClick={()=>{
+                          setShowNotifications(false);
+                          // Seite neu laden um aktuelle Sponsor-Materialien zu sehen
+                          if(n.data?.sponsorId){
+                            initUserData(user.id);
+                            notify("Daten werden aktualisiert…");
+                          }
+                        }} style={{padding:"0.85rem 1rem",borderBottom:`1px solid ${C.border}`,cursor:n.data?.sponsorId?"pointer":"default",background:n.read?"transparent":"#fffbf0",transition:"background 0.15s"}}
+                          onMouseEnter={e=>{if(n.data?.sponsorId)e.currentTarget.style.background=C.bg;}}
+                          onMouseLeave={e=>e.currentTarget.style.background=n.read?"transparent":"#fffbf0"}>
+                          <div style={{display:"flex",alignItems:"flex-start",gap:"0.6rem"}}>
+                            <div style={{width:30,height:30,borderRadius:8,background:C.accentSoft,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
+                              <Upload size={13} strokeWidth={1.5} color={C.accent}/>
+                            </div>
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{fontSize:"0.82rem",fontWeight:700,color:C.text,marginBottom:"0.15rem"}}>{n.title}</div>
+                              <div style={{fontSize:"0.75rem",color:C.textMid,lineHeight:1.4}}>{n.body}</div>
+                              <div style={{fontSize:"0.68rem",color:C.textLight,marginTop:"0.25rem"}}>{new Date(n.created_at).toLocaleDateString("de-AT",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"})}</div>
+                            </div>
+                            {!n.read&&<div style={{width:7,height:7,borderRadius:"50%",background:C.accent,flexShrink:0,marginTop:6}}/>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                }
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

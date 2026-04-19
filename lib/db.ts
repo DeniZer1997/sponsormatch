@@ -449,3 +449,36 @@ export async function loadAllUserData(userId: string): Promise<UserData> {
     contacts: contactsRes.data ?? [],
   };
 }
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+export interface AppNotification {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  data: Record<string, unknown> | null;
+  read: boolean;
+  created_at: string;
+}
+
+export async function getNotifications(userId: string): Promise<AppNotification[]> {
+  const { data } = await supabase()
+    .from('notifications')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(30);
+  return data ?? [];
+}
+
+export async function markNotificationsRead(ids: string[]): Promise<void> {
+  if (!ids.length) return;
+  await supabase()
+    .from('notifications')
+    .update({ read: true })
+    .in('id', ids);
+}
